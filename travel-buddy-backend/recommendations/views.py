@@ -9,6 +9,12 @@ from .serializers import (
     UserPreferenceSerializer, 
     ReviewSerializer
 )
+from .ml_utils import (
+    get_ml_recommendations_for_user,
+    get_similar_destinations,
+    analyze_review_sentiment_bulk,
+    extract_destination_keywords
+)
 
 
 class DestinationViewSet(viewsets.ModelViewSet):
@@ -67,6 +73,47 @@ class DestinationViewSet(viewsets.ModelViewSet):
             destinations = Destination.objects.all()[:10]
             serializer = self.get_serializer(destinations, many=True)
             return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def ml_recommended(self, request):
+        """Get ML-powered personalized recommendations"""
+        if not request.user.is_authenticated:
+            # Return popular destinations for anonymous users
+            destinations = Destination.objects.all().order_by('-rating')[:10]
+            serializer = self.get_serializer(destinations, many=True)
+            return Response(serializer.data)
+        
+        # Get limit from query params, default to 10
+        limit = int(request.query_params.get('limit', 10))
+        
+        # Get ML-powered recommendations
+        recommendations = get_ml_recommendations_for_user(request.user, limit=limit)
+        serializer = self.get_serializer(recommendations, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def similar(self, request, pk=None):
+        """Get destinations similar to this one using ML"""
+        destination = self.get_object()
+        limit = int(request.query_params.get('limit', 5))
+        
+        similar_destinations = get_similar_destinations(destination, limit=limit)
+        serializer = self.get_serializer(similar_destinations, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def keywords(self, request, pk=None):
+        """Extract keywords from destination description"""
+        destination = self.get_object()
+        keywords = extract_destination_keywords(destination)
+        return Response({'keywords': keywords})
+    
+    @action(detail=True, methods=['get'])
+    def sentiment_analysis(self, request, pk=None):
+        """Analyze sentiment of all reviews for this destination"""
+        destination = self.get_object()
+        sentiment_data = analyze_review_sentiment_bulk(destination.id)
+        return Response(sentiment_data)
 
 
 class UserPreferenceViewSet(viewsets.ModelViewSet):

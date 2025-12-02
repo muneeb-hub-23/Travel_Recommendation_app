@@ -8,9 +8,9 @@ The MySQL configuration is centralized in `travel_backend/config.py`:
 
 ### DatabaseConfig Class
 - **DB_ENGINE**: Database engine (default: `django.db.backends.mysql`)
-- **DB_NAME**: Database name (default: `travel_recommendation_db`)
+- **DB_NAME**: Database name (default: `travel_buddy`)
 - **DB_USER**: MySQL username (default: `root`)
-- **DB_PASSWORD**: MySQL password
+- **DB_PASSWORD**: MySQL password  (default: `root`)
 - **DB_HOST**: MySQL server host (default: `localhost`)
 - **DB_PORT**: MySQL server port (default: `3306`)
 
