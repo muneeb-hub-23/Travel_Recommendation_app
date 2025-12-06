@@ -3,7 +3,9 @@ import { motion } from 'framer-motion';
 import { 
   Send, Sparkles, Mountain, Palmtree, Snowflake, Waves, 
   Building2, Star, Plane, Bus, Bike, UtensilsCrossed, 
-  Cloud, Sun, CloudRain, Search, TrendingUp
+  Cloud, Sun, CloudRain, Search, TrendingUp, MapPin,
+  Calendar, Clock, CheckCircle2, XCircle, AlertCircle,
+  Heart, Eye, Share2, Compass, Zap, ThumbsUp
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 
@@ -62,6 +64,182 @@ const Home = ({ user, onLogout }) => {
     { id: 1, name: 'Hunza Valley', location: 'Gilgit-Baltistan', image: 'https://images.unsplash.com/photo-1589308078059-be1415eab4c3?w=400', rating: 4.9 },
     { id: 2, name: 'Murree', location: 'Punjab', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400', rating: 4.7 },
     { id: 3, name: 'Swat Valley', location: 'Khyber Pakhtunkhwa', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400', rating: 4.8 },
+  ];
+
+  // User's trips
+  const myTrips = [
+    { 
+      id: 1, 
+      destination: 'Hunza Valley', 
+      location: 'Gilgit-Baltistan',
+      image: 'https://images.unsplash.com/photo-1589308078059-be1415eab4c3?w=400',
+      startDate: '2024-12-20',
+      endDate: '2024-12-25',
+      status: 'upcoming',
+      days: 5,
+      category: 'Mountain',
+      budget: '₨ 45,000'
+    },
+    { 
+      id: 2, 
+      destination: 'Swat Valley', 
+      location: 'Khyber Pakhtunkhwa',
+      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+      startDate: '2024-11-15',
+      endDate: '2024-11-18',
+      status: 'completed',
+      days: 3,
+      category: 'Valley',
+      budget: '₨ 32,000'
+    },
+    { 
+      id: 3, 
+      destination: 'Murree Hills', 
+      location: 'Punjab',
+      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+      startDate: '2024-10-10',
+      endDate: '2024-10-12',
+      status: 'completed',
+      days: 2,
+      category: 'Hill Station',
+      budget: '₨ 18,000'
+    },
+    { 
+      id: 4, 
+      destination: 'Naran Kaghan', 
+      location: 'Khyber Pakhtunkhwa',
+      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+      startDate: '2024-09-05',
+      endDate: '2024-09-08',
+      status: 'cancelled',
+      days: 3,
+      category: 'Mountain',
+      budget: '₨ 28,000'
+    },
+  ];
+
+  // Explore destinations
+  const exploreDestinations = [
+    { 
+      id: 1, 
+      name: 'Fairy Meadows', 
+      location: 'Gilgit-Baltistan',
+      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+      rating: 4.9,
+      reviews: 342,
+      category: 'Alpine',
+      difficulty: 'Challenging',
+      duration: '4-5 days',
+      price: '₨ 35,000'
+    },
+    { 
+      id: 2, 
+      name: 'Skardu', 
+      location: 'Gilgit-Baltistan',
+      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+      rating: 4.8,
+      reviews: 289,
+      category: 'Valley',
+      difficulty: 'Moderate',
+      duration: '5-6 days',
+      price: '₨ 42,000'
+    },
+    { 
+      id: 3, 
+      name: 'Neelum Valley', 
+      location: 'Azad Kashmir',
+      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+      rating: 4.7,
+      reviews: 256,
+      category: 'Valley',
+      difficulty: 'Easy',
+      duration: '3-4 days',
+      price: '₨ 28,000'
+    },
+    { 
+      id: 4, 
+      name: 'Chitral', 
+      location: 'Khyber Pakhtunkhwa',
+      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+      rating: 4.6,
+      reviews: 198,
+      category: 'Mountain',
+      difficulty: 'Moderate',
+      duration: '4-5 days',
+      price: '₨ 38,000'
+    },
+    { 
+      id: 5, 
+      name: 'Kalash Valley', 
+      location: 'Khyber Pakhtunkhwa',
+      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+      rating: 4.7,
+      reviews: 221,
+      category: 'Cultural',
+      difficulty: 'Easy',
+      duration: '3-4 days',
+      price: '₨ 32,000'
+    },
+    { 
+      id: 6, 
+      name: 'Astore Valley', 
+      location: 'Gilgit-Baltistan',
+      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+      rating: 4.5,
+      reviews: 167,
+      category: 'Valley',
+      difficulty: 'Moderate',
+      duration: '4-5 days',
+      price: '₨ 36,000'
+    },
+  ];
+
+  // Personalized recommendations based on previous trips
+  const personalizedRecommendations = [
+    { 
+      id: 1, 
+      name: 'Ratti Gali Lake', 
+      location: 'Azad Kashmir',
+      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+      rating: 4.8,
+      matchScore: 95,
+      reason: 'Similar to your Hunza Valley trip',
+      category: 'Alpine',
+      price: '₨ 32,000'
+    },
+    { 
+      id: 2, 
+      name: 'Deosai Plains', 
+      location: 'Gilgit-Baltistan',
+      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+      rating: 4.9,
+      matchScore: 92,
+      reason: 'Matches your love for mountain destinations',
+      category: 'Highland',
+      price: '₨ 48,000'
+    },
+    { 
+      id: 3, 
+      name: 'Rama Meadow', 
+      location: 'Gilgit-Baltistan',
+      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+      rating: 4.7,
+      matchScore: 88,
+      reason: 'Perfect for your preferred budget range',
+      category: 'Alpine',
+      price: '₨ 25,000'
+    },
+    { 
+      id: 4, 
+      name: 'Shogran', 
+      location: 'Khyber Pakhtunkhwa',
+      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+      rating: 4.6,
+      matchScore: 85,
+      reason: 'Similar to your Murree Hills experience',
+      category: 'Hill Station',
+      price: '₨ 22,000'
+    },
   ];
 
   return (
@@ -125,6 +303,40 @@ const Home = ({ user, onLogout }) => {
             </button>
           </div>
         </motion.div>
+
+        {/* My Trips Section - Only for logged-in users */}
+        {user && (
+          <Section title="My Trips" icon={MapPin}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {myTrips.map((trip, index) => (
+                <MyTripCard key={trip.id} trip={trip} delay={index * 0.1} />
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* Personalized Recommendations - Only for logged-in users */}
+        {user && (
+          <Section title="Recommended For You" icon={Zap}>
+            <p className="text-slate-600 mb-6 -mt-3">Based on your previous trips and preferences</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {personalizedRecommendations.map((dest, index) => (
+                <PersonalizedCard key={dest.id} destination={dest} delay={index * 0.1} />
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* Explore Destinations - Only for logged-in users */}
+        {user && (
+          <Section title="Explore New Destinations" icon={Compass}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {exploreDestinations.map((dest, index) => (
+                <ExploreCard key={dest.id} destination={dest} delay={index * 0.1} />
+              ))}
+            </div>
+          </Section>
+        )}
 
         {/* Destination Categories */}
         <Section title="Choose Your Destination Type" icon={Mountain}>
@@ -361,6 +573,174 @@ const WeatherCard = ({ weather, delay }) => (
     </div>
     <h3 className="font-bold text-slate-800">{weather.name}</h3>
     <p className="text-sm text-slate-600 mt-1">{weather.temp}</p>
+  </motion.div>
+);
+
+// My Trip Card Component
+const MyTripCard = ({ trip, delay }) => {
+  const statusConfig = {
+    upcoming: { icon: Clock, color: 'from-blue-500 to-cyan-500', bg: 'bg-blue-100', text: 'text-blue-700', label: 'Upcoming' },
+    completed: { icon: CheckCircle2, color: 'from-green-500 to-emerald-500', bg: 'bg-green-100', text: 'text-green-700', label: 'Completed' },
+    cancelled: { icon: XCircle, color: 'from-red-500 to-pink-500', bg: 'bg-red-100', text: 'text-red-700', label: 'Cancelled' },
+  };
+  
+  const config = statusConfig[trip.status];
+  const StatusIcon = config.icon;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay }}
+      whileHover={{ y: -8 }}
+      className="card overflow-hidden cursor-pointer"
+    >
+      <div className="relative h-40 overflow-hidden">
+        <img src={trip.image} alt={trip.destination} className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" />
+        <div className={`absolute top-3 right-3 ${config.bg} backdrop-blur-sm px-3 py-1 rounded-full flex items-center space-x-1`}>
+          <StatusIcon className={`h-4 w-4 ${config.text}`} />
+          <span className={`text-xs font-semibold ${config.text}`}>{config.label}</span>
+        </div>
+      </div>
+      <div className="p-4">
+        <h3 className="font-bold text-lg text-slate-800 mb-1">{trip.destination}</h3>
+        <p className="text-slate-600 text-sm mb-3 flex items-center">
+          <MapPin className="h-3 w-3 mr-1" />
+          {trip.location}
+        </p>
+        <div className="flex items-center justify-between text-sm mb-2">
+          <div className="flex items-center text-slate-600">
+            <Calendar className="h-4 w-4 mr-1" />
+            <span>{new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+          </div>
+          <span className="text-slate-500">•</span>
+          <div className="flex items-center text-slate-600">
+            <Clock className="h-4 w-4 mr-1" />
+            <span>{trip.days} days</span>
+          </div>
+        </div>
+        <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+          <span className="text-sm text-slate-600">{trip.category}</span>
+          <span className="text-sm font-semibold text-primary-600">{trip.budget}</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// Personalized Recommendation Card Component
+const PersonalizedCard = ({ destination, delay }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    transition={{ delay }}
+    whileHover={{ y: -8 }}
+    className="card overflow-hidden cursor-pointer relative"
+  >
+    {/* AI Match Badge */}
+    <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full flex items-center space-x-1">
+      <Zap className="h-3 w-3 fill-white" />
+      <span className="text-xs font-semibold">{destination.matchScore}% Match</span>
+    </div>
+    
+    <div className="relative h-40 overflow-hidden">
+      <img src={destination.image} alt={destination.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" />
+      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center space-x-1">
+        <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
+        <span className="text-xs font-semibold">{destination.rating}</span>
+      </div>
+    </div>
+    
+    <div className="p-4">
+      <h3 className="font-bold text-lg text-slate-800 mb-1">{destination.name}</h3>
+      <p className="text-slate-600 text-sm mb-2 flex items-center">
+        <MapPin className="h-3 w-3 mr-1" />
+        {destination.location}
+      </p>
+      
+      <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 mb-3">
+        <p className="text-xs text-purple-700 flex items-center">
+          <ThumbsUp className="h-3 w-3 mr-1" />
+          {destination.reason}
+        </p>
+      </div>
+      
+      <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+        <span className="text-xs px-2 py-1 bg-slate-100 text-slate-700 rounded-full">{destination.category}</span>
+        <span className="text-sm font-semibold text-primary-600">{destination.price}</span>
+      </div>
+    </div>
+  </motion.div>
+);
+
+// Explore Destination Card Component
+const ExploreCard = ({ destination, delay }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    transition={{ delay }}
+    whileHover={{ y: -8 }}
+    className="card overflow-hidden cursor-pointer group"
+  >
+    <div className="relative h-48 overflow-hidden">
+      <img src={destination.image} alt={destination.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+      
+      {/* Action buttons */}
+      <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
+          <Heart className="h-4 w-4 text-red-500" />
+        </button>
+        <button className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
+          <Share2 className="h-4 w-4 text-slate-600" />
+        </button>
+      </div>
+      
+      {/* Rating */}
+      <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center space-x-1">
+        <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+        <span className="text-sm font-semibold">{destination.rating}</span>
+        <span className="text-xs text-slate-600">({destination.reviews})</span>
+      </div>
+    </div>
+    
+    <div className="p-4">
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex-1">
+          <h3 className="font-bold text-lg text-slate-800 mb-1">{destination.name}</h3>
+          <p className="text-slate-600 text-sm flex items-center">
+            <MapPin className="h-3 w-3 mr-1" />
+            {destination.location}
+          </p>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="flex items-center text-xs text-slate-600">
+          <Clock className="h-3 w-3 mr-1" />
+          {destination.duration}
+        </div>
+        <div className="flex items-center text-xs text-slate-600">
+          <AlertCircle className="h-3 w-3 mr-1" />
+          {destination.difficulty}
+        </div>
+      </div>
+      
+      <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+        <span className="text-xs px-2 py-1 bg-gradient-to-r from-primary-100 to-accent-100 text-primary-700 rounded-full font-medium">
+          {destination.category}
+        </span>
+        <span className="text-sm font-semibold text-primary-600">{destination.price}</span>
+      </div>
+      
+      <button className="w-full mt-3 btn-primary text-sm py-2 flex items-center justify-center space-x-2">
+        <Eye className="h-4 w-4" />
+        <span>View Details</span>
+      </button>
+    </div>
   </motion.div>
 );
 
