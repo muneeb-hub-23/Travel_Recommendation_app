@@ -19,6 +19,9 @@ const Home = ({ user, onLogout }) => {
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [destinations, setDestinations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchResults, setSearchResults] = useState(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchSummary, setSearchSummary] = useState('');
 
   // Voice input hook
   const { isListening, isSupported, toggleListening, changeLanguage } = useVoiceInput(
@@ -34,10 +37,51 @@ const Home = ({ user, onLogout }) => {
     setShowLanguageMenu(false);
   };
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
-    console.log('Search query:', query);
-    // Will be connected to AI backend later
+    if (!query.trim()) return;
+
+    setSearchLoading(true);
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/destinations/smart_search/?q=${encodeURIComponent(query)}&limit=20`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data.results || []);
+        
+        // Build enhanced summary with budget and duration info
+        let summary = data.summary || `Found ${data.count || 0} destinations`;
+        if (data.room_type) {
+          summary += ` • ${data.room_type.charAt(0).toUpperCase() + data.room_type.slice(1)} room`;
+        }
+        if (data.budget) {
+          summary += ` • Under PKR ${data.budget.toLocaleString()}`;
+        }
+        if (data.days && data.days > 1) {
+          summary += ` • ${data.days} days`;
+        }
+        
+        setSearchSummary(summary);
+
+        // Scroll to search results
+        const resultsElement = document.getElementById('search-results');
+        if (resultsElement) {
+          resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } else {
+        console.error('Search failed');
+        setSearchResults([]);
+        setSearchSummary('No results found');
+      }
+    } catch (error) {
+      console.error('Error during search:', error);
+      setSearchResults([]);
+      setSearchSummary('Error performing search');
+    } finally {
+      setSearchLoading(false);
+    }
   };
 
   const destinationCategories = [
@@ -315,21 +359,143 @@ const Home = ({ user, onLogout }) => {
           </form>
 
           {/* AI Suggestions */}
-          <div className="flex flex-wrap justify-center gap-3 mt-6">
-            <button className="px-4 py-2 bg-white rounded-full text-sm text-slate-600 hover:text-primary-600 hover:shadow-md transition-all duration-300 border border-slate-200">
-              🏔️ Weekend getaways
+          <div className="flex flex-wrap gap-3 justify-center mt-8">
+            <button 
+              onClick={() => {
+                setQuery('trending mountain places');
+                handleSearch({ preventDefault: () => {} });
+              }}
+              className="px-4 py-2 bg-white rounded-full text-sm text-slate-600 hover:text-primary-600 hover:shadow-md transition-all duration-300 border border-slate-200"
+            >
+              🏔️ Trending mountains
             </button>
-            <button className="px-4 py-2 bg-white rounded-full text-sm text-slate-600 hover:text-primary-600 hover:shadow-md transition-all duration-300 border border-slate-200">
-              💰 Budget trips under 20k
+            <button 
+              onClick={() => {
+                setQuery('cultural tourist places');
+                handleSearch({ preventDefault: () => {} });
+              }}
+              className="px-4 py-2 bg-white rounded-full text-sm text-slate-600 hover:text-primary-600 hover:shadow-md transition-all duration-300 border border-slate-200"
+            >
+              🎭 Cultural places
             </button>
-            <button className="px-4 py-2 bg-white rounded-full text-sm text-slate-600 hover:text-primary-600 hover:shadow-md transition-all duration-300 border border-slate-200">
-              🎒 Adventure destinations
+            <button 
+              onClick={() => {
+                setQuery('snowfall tourist places');
+                handleSearch({ preventDefault: () => {} });
+              }}
+              className="px-4 py-2 bg-white rounded-full text-sm text-slate-600 hover:text-primary-600 hover:shadow-md transition-all duration-300 border border-slate-200"
+            >
+              ❄️ Snowy destinations
             </button>
-            <button className="px-4 py-2 bg-white rounded-full text-sm text-slate-600 hover:text-primary-600 hover:shadow-md transition-all duration-300 border border-slate-200">
-              🏖️ Relaxing beaches
+            <button 
+              onClick={() => {
+                setQuery('beach destinations');
+                handleSearch({ preventDefault: () => {} });
+              }}
+              className="px-4 py-2 bg-white rounded-full text-sm text-slate-600 hover:text-primary-600 hover:shadow-md transition-all duration-300 border border-slate-200"
+            >
+              🏖️ Beaches
             </button>
           </div>
         </motion.div>
+
+        {/* AI Search Loader - Shows immediately when searching starts */}
+        {searchLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+          >
+            <div className="bg-gradient-to-r from-primary-50 to-accent-50 rounded-2xl p-8">
+              <div className="text-center py-8">
+                {/* Gemini-style animated loader */}
+                <div className="flex justify-center items-center space-x-2 mb-6">
+                  <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-accent-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                  <div className="w-3 h-3 bg-gradient-to-r from-accent-500 to-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-3 h-3 bg-gradient-to-r from-pink-500 to-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+                </div>
+                
+                {/* Animated gradient text */}
+                <div className="mb-4">
+                  <p className="text-xl font-semibold bg-gradient-to-r from-primary-600 via-accent-600 to-purple-600 bg-clip-text text-transparent animate-pulse">
+                    AI is searching destinations...
+                  </p>
+                </div>
+                
+                {/* Progress steps */}
+                <div className="max-w-md mx-auto space-y-2">
+                  <div className="flex items-center justify-center space-x-2 text-sm text-slate-600">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span>Analyzing your query</span>
+                  </div>
+                  <div className="flex items-center justify-center space-x-2 text-sm text-slate-600">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                    <span>Finding matching destinations</span>
+                  </div>
+                  <div className="flex items-center justify-center space-x-2 text-sm text-slate-600">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                    <span>Fetching live weather data ☁️</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* AI Search Results */}
+        {searchResults && !searchLoading && (
+          <motion.div
+            id="search-results"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+          >
+            <div className="bg-gradient-to-r from-primary-50 to-accent-50 rounded-2xl p-6 mb-6">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center space-x-3">
+                  <div className="p-3 bg-white rounded-xl shadow-sm">
+                    <Sparkles className="h-6 w-6 text-primary-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-800">AI Search Results</h2>
+                    <p className="text-slate-600 text-sm mt-1">{searchSummary}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setSearchResults(null);
+                    setQuery('');
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-lg transition-colors shadow-sm"
+                >
+                  <XCircle className="h-4 w-4" />
+                  <span>Clear Search</span>
+                </button>
+              </div>
+            </div>
+
+            {searchResults.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-2xl shadow-sm">
+                <AlertCircle className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-slate-800 mb-2">No results found</h3>
+                <p className="text-slate-600 mb-4">Try different keywords or check spelling</p>
+                <button
+                  onClick={() => setSearchResults(null)}
+                  className="btn-primary"
+                >
+                  Try Another Search
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {searchResults.map((dest, index) => (
+                  <TrendingCard key={dest.id} destination={dest} delay={index * 0.1} />
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
 
         {/* My Trips Section - Only for logged-in users */}
         {user && (
@@ -359,8 +525,13 @@ const Home = ({ user, onLogout }) => {
           <Section title="Explore New Destinations" icon={Compass}>
             {loading ? (
               <div className="text-center py-12">
-                <div className="animate-spin h-12 w-12 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-slate-600">Loading destinations...</p>
+                {/* Gemini-style animated loader */}
+                <div className="flex justify-center items-center space-x-2 mb-4">
+                  <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-accent-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                  <div className="w-3 h-3 bg-gradient-to-r from-accent-500 to-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+                <p className="text-slate-600 font-medium">Loading destinations...</p>
               </div>
             ) : destinations.length === 0 ? (
               <div className="text-center py-12">
@@ -399,8 +570,13 @@ const Home = ({ user, onLogout }) => {
         <Section title="Trending Destinations" icon={TrendingUp}>
           {loading ? (
             <div className="text-center py-12">
-              <div className="animate-spin h-12 w-12 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="text-slate-600">Loading destinations...</p>
+              {/* Gemini-style animated loader */}
+              <div className="flex justify-center items-center space-x-2 mb-4">
+                <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-accent-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                <div className="w-3 h-3 bg-gradient-to-r from-accent-500 to-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              </div>
+              <p className="text-slate-600 font-medium">Loading destinations...</p>
             </div>
           ) : destinations.length === 0 ? (
             <div className="text-center py-12">
@@ -553,10 +729,91 @@ const TrendingCard = ({ destination, delay }) => (
         <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
         <span className="text-sm font-semibold">{destination.rating || destination.average_rating || '0.0'}</span>
       </div>
+      {destination.category && (
+        <div className="absolute top-3 left-3 bg-primary-500/90 backdrop-blur-sm px-3 py-1 rounded-full">
+          <span className="text-xs font-medium text-white capitalize">{destination.category}</span>
+        </div>
+      )}
     </div>
     <div className="p-4">
-      <h3 className="font-bold text-lg text-slate-800">{destination.name}</h3>
-      <p className="text-slate-600 text-sm">{destination.country || destination.location}</p>
+      <h3 className="font-bold text-lg text-slate-800 mb-1">{destination.name}</h3>
+      <p className="text-slate-600 text-sm mb-3 flex items-center">
+        <MapPin className="h-3 w-3 mr-1" />
+        {destination.country || destination.location}
+      </p>
+      
+      {/* Hotel Information */}
+      {destination.hotel && (
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 rounded-lg mb-3 border border-purple-200">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-purple-900">🏨 {destination.hotel.name}</span>
+            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
+              ⭐ {destination.hotel.rating}
+            </span>
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-purple-700">Room Type:</span>
+              <span className="font-semibold text-purple-900 capitalize">{destination.hotel.room_type}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-purple-700">Per Night:</span>
+              <span className="font-semibold text-purple-900">PKR {destination.hotel.price_per_night.toLocaleString()}</span>
+            </div>
+            {destination.hotel.days > 1 && (
+              <>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-purple-700">Duration:</span>
+                  <span className="font-semibold text-purple-900">{destination.hotel.days} days</span>
+                </div>
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-purple-200">
+                  <span className="text-purple-700 font-bold">Total Price:</span>
+                  <span className="font-bold text-lg text-purple-900">PKR {destination.hotel.total_price.toLocaleString()}</span>
+                </div>
+              </>
+            )}
+          </div>
+          {destination.hotel.amenities && destination.hotel.amenities.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {destination.hotel.amenities.map((amenity, idx) => (
+                <span key={idx} className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
+                  {amenity}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Current Weather (Live) */}
+      {destination.current_weather && (
+        <div className="flex items-center space-x-2 mb-2 text-xs">
+          <div className="flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+            <Cloud className="h-3 w-3 mr-1" />
+            <span className="font-medium">Now: {destination.current_weather.description}</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Stored Weather (Fallback) */}
+      {!destination.current_weather && destination.general_weather && (
+        <div className="flex items-center space-x-2 mb-2 text-xs">
+          <div className="flex items-center bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+            <Cloud className="h-3 w-3 mr-1" />
+            <span>{destination.general_weather}</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Best Season */}
+      {destination.best_season && (
+        <div className="flex items-center space-x-2 text-xs">
+          <div className="flex items-center bg-green-50 text-green-700 px-2 py-1 rounded-full">
+            <Calendar className="h-3 w-3 mr-1" />
+            <span>Best: {destination.best_season}</span>
+          </div>
+        </div>
+      )}
     </div>
   </motion.div>
 );

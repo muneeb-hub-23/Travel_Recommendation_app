@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Destination, UserPreference, Review
+from .models import Destination, UserPreference, Review, Hotel
 from django.contrib.auth.models import User
 
 
@@ -27,6 +27,26 @@ class DestinationSerializer(serializers.ModelSerializer):
 
     def get_review_count(self, obj):
         return obj.reviews.count()
+
+
+class HotelSerializer(serializers.ModelSerializer):
+    """Serializer for Hotel model"""
+    destination_name = serializers.CharField(source='destination.name', read_only=True)
+    destination_country = serializers.CharField(source='destination.country', read_only=True)
+    
+    class Meta:
+        model = Hotel
+        fields = [
+            'id', 'destination', 'destination_name', 'destination_country',
+            'name', 'description', 'address', 'phone', 'email', 'website',
+            'image_main', 'image_gallery',
+            'price_single', 'price_couple', 'price_executive', 'price_family',
+            'price_entire_hotel', 'price_villa',
+            'amenities', 'rating', 'total_rooms',
+            'check_in_time', 'check_out_time', 'cancellation_policy',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
 
 
 class UserPreferenceSerializer(serializers.ModelSerializer):

@@ -18,9 +18,16 @@ const AdminDashboard = ({ admin, onLogout }) => {
   });
   const [showAddDestination, setShowAddDestination] = useState(false);
   const [destinations, setDestinations] = useState([]);
+  const [hotels, setHotels] = useState([]);
   const [selectedDestination, setSelectedDestination] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [destinationSearch, setDestinationSearch] = useState('');
+  const [hotelSearch, setHotelSearch] = useState('');
+  const [selectedHotel, setSelectedHotel] = useState(null);
+  const [showViewHotelModal, setShowViewHotelModal] = useState(false);
+  const [showEditHotelModal, setShowEditHotelModal] = useState(false);
+  const [showAddHotelModal, setShowAddHotelModal] = useState(false);
 
   // Save active tab to localStorage whenever it changes
   useEffect(() => {
@@ -68,6 +75,24 @@ const AdminDashboard = ({ admin, onLogout }) => {
     };
 
     fetchDestinations();
+  }, []);
+
+  // Fetch hotels from API
+  useEffect(() => {
+    const fetchHotels = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/hotels/');
+        if (response.ok) {
+          const data = await response.json();
+          setHotels(Array.isArray(data) ? data : (data.results || []));
+        }
+      } catch (error) {
+        console.error('Error fetching hotels:', error);
+        setHotels([]);
+      }
+    };
+
+    fetchHotels();
   }, []);
 
   const allReviews = [
@@ -252,14 +277,91 @@ const AdminDashboard = ({ admin, onLogout }) => {
     }
   };
 
+  // Hotel handlers
+  const handleViewHotel = (hotel) => {
+    setSelectedHotel(hotel);
+    setShowViewHotelModal(true);
+  };
+
+  const handleEditHotel = (hotel) => {
+    setSelectedHotel(hotel);
+    setShowEditHotelModal(true);
+  };
+
+  const handleDeleteHotel = async (hotelId) => {
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Are you sure?',
+      text: 'This action cannot be undone!',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await fetch(`http://localhost:8000/api/hotels/${hotelId}/`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          setHotels(prev => prev.filter(hotel => hotel.id !== hotelId));
+          await Swal.fire({
+            icon: 'success',
+            title: 'Deleted!',
+            text: 'Hotel has been deleted.',
+            confirmButtonColor: '#10b981',
+            timer: 2000
+          });
+        } else {
+          throw new Error('Failed to delete');
+        }
+      } catch (error) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to delete hotel',
+          confirmButtonColor: '#ef4444'
+        });
+      }
+    }
+  };
+
+  const handleHotelAdded = (newHotel) => {
+    setHotels(prev => [...prev, newHotel]);
+    setShowAddHotelModal(false);
+  };
+
+  const handleHotelUpdated = (updatedHotel) => {
+    setHotels(prev => prev.map(h => h.id === updatedHotel.id ? updatedHotel : h));
+    setShowEditHotelModal(false);
+  };
+
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'users', label: 'Users', icon: Users },
     { id: 'destinations', label: 'Destinations', icon: MapPin },
+    { id: 'hotels', label: 'Hotels', icon: Hotel },
     { id: 'analytics', label: 'Analytics', icon: PieChart },
     { id: 'reviews', label: 'Reviews', icon: MessageSquare },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
+
+  // Filter destinations based on search
+  const filteredDestinations = destinations.filter(dest =>
+    dest.name.toLowerCase().includes(destinationSearch.toLowerCase()) ||
+    dest.country.toLowerCase().includes(destinationSearch.toLowerCase()) ||
+    dest.category.toLowerCase().includes(destinationSearch.toLowerCase())
+  );
+
+  // Filter hotels based on search
+  const filteredHotels = hotels.filter(hotel =>
+    hotel.name.toLowerCase().includes(hotelSearch.toLowerCase()) ||
+    hotel.destination_name?.toLowerCase().includes(hotelSearch.toLowerCase()) ||
+    hotel.address.toLowerCase().includes(hotelSearch.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -556,13 +658,32 @@ const AdminDashboard = ({ admin, onLogout }) => {
               <div className="card p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-slate-800">Destinations</h2>
-                  <button 
-                    onClick={() => setShowAddDestination(true)}
-                    className="btn-primary flex items-center space-x-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Add Destination</span>
-                  </button>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-sm text-slate-600">
+                      Total: <span className="font-bold text-primary-600">{destinations.length}</span> destinations
+                    </div>
+                    <button 
+                      onClick={() => setShowAddDestination(true)}
+                      className="btn-primary flex items-center space-x-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Add Destination</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search Bar */}
+                <div className="mb-6">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search destinations by name, country, or category..."
+                      value={destinationSearch}
+                      onChange={(e) => setDestinationSearch(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
                 </div>
 
                 {destinations.length === 0 ? (
@@ -576,9 +697,14 @@ const AdminDashboard = ({ admin, onLogout }) => {
                       Add Your First Destination
                     </button>
                   </div>
+                ) : filteredDestinations.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Search className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-600">No destinations found matching your search</p>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {destinations.map((dest) => (
+                    {filteredDestinations.map((dest) => (
                       <div key={dest.id} className="card p-4 hover:shadow-lg transition-shadow">
                         {dest.image && (
                           <img 
@@ -632,6 +758,159 @@ const AdminDashboard = ({ admin, onLogout }) => {
                           </button>
                           <button 
                             onClick={() => handleDeleteDestination(dest.id)}
+                            className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Hotels Tab */}
+            {activeTab === 'hotels' && (
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-slate-800">Hotels</h2>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-sm text-slate-600">
+                      Total: <span className="font-bold text-primary-600">{hotels.length}</span> hotels
+                    </div>
+                    <button 
+                      onClick={() => setShowAddHotelModal(true)}
+                      className="btn-primary flex items-center space-x-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Add Hotel</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search Bar */}
+                <div className="mb-6">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search hotels by name, destination, or location..."
+                      value={hotelSearch}
+                      onChange={(e) => setHotelSearch(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {hotels.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Hotel className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-600 mb-4">No hotels added yet</p>
+                  </div>
+                ) : filteredHotels.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Search className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-600">No hotels found matching your search</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredHotels.map((hotel) => (
+                      <div key={hotel.id} className="card p-4 hover:shadow-lg transition-shadow">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <h3 className="font-bold text-slate-800 mb-1">{hotel.name}</h3>
+                            <p className="text-sm text-slate-600 flex items-center">
+                              <MapPin className="h-3 w-3 mr-1" />
+                              {hotel.destination_name}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1">{hotel.address}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2 mb-3">
+                          <div className="flex items-center space-x-1">
+                            <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                            <span className="text-sm font-medium">{hotel.rating || '0.0'}</span>
+                          </div>
+                          <span className="text-xs text-slate-500">•</span>
+                          <span className="text-xs text-slate-500">{hotel.total_rooms} rooms</span>
+                        </div>
+
+                        {/* Pricing Grid */}
+                        <div className="bg-slate-50 rounded-lg p-3 mb-3">
+                          <p className="text-xs font-semibold text-slate-700 mb-2">Pricing (per night)</p>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <span className="text-slate-500">Single:</span>
+                              <span className="font-semibold text-slate-800 ml-1">PKR {hotel.price_single}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">Couple:</span>
+                              <span className="font-semibold text-slate-800 ml-1">PKR {hotel.price_couple}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">Executive:</span>
+                              <span className="font-semibold text-slate-800 ml-1">PKR {hotel.price_executive}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500">Family:</span>
+                              <span className="font-semibold text-slate-800 ml-1">PKR {hotel.price_family}</span>
+                            </div>
+                            {hotel.price_villa && (
+                              <div className="col-span-2">
+                                <span className="text-slate-500">Villa:</span>
+                                <span className="font-semibold text-primary-600 ml-1">PKR {hotel.price_villa}</span>
+                              </div>
+                            )}
+                            {hotel.price_entire_hotel && (
+                              <div className="col-span-2">
+                                <span className="text-slate-500">Entire Hotel:</span>
+                                <span className="font-semibold text-accent-600 ml-1">PKR {hotel.price_entire_hotel}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Amenities */}
+                        {hotel.amenities && hotel.amenities.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs font-semibold text-slate-700 mb-2">Amenities</p>
+                            <div className="flex flex-wrap gap-1">
+                              {hotel.amenities.slice(0, 4).map((amenity, idx) => (
+                                <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                                  {amenity}
+                                </span>
+                              ))}
+                              {hotel.amenities.length > 4 && (
+                                <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                                  +{hotel.amenities.length - 4} more
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <p className="text-sm text-slate-600 mb-3 line-clamp-2">{hotel.description}</p>
+
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => handleViewHotel(hotel)}
+                            className="flex-1 btn-secondary text-sm py-2 flex items-center justify-center"
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </button>
+                          <button 
+                            onClick={() => handleEditHotel(hotel)}
+                            className="flex-1 btn-primary text-sm py-2 flex items-center justify-center"
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteHotel(hotel.id)}
                             className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center"
                             title="Delete"
                           >
@@ -983,6 +1262,47 @@ const AdminDashboard = ({ admin, onLogout }) => {
           }}
         />
       )}
+
+      {/* View Hotel Modal */}
+      {showViewHotelModal && selectedHotel && (
+        <ViewHotelModal
+          hotel={selectedHotel}
+          onClose={() => {
+            setShowViewHotelModal(false);
+            setSelectedHotel(null);
+          }}
+          onEdit={() => {
+            setShowViewHotelModal(false);
+            handleEditHotel(selectedHotel);
+          }}
+          onDelete={() => {
+            setShowViewHotelModal(false);
+            handleDeleteHotel(selectedHotel.id);
+          }}
+        />
+      )}
+
+      {/* Add Hotel Modal */}
+      {showAddHotelModal && (
+        <AddHotelModal
+          destinations={destinations}
+          onClose={() => setShowAddHotelModal(false)}
+          onHotelAdded={handleHotelAdded}
+        />
+      )}
+
+      {/* Edit Hotel Modal */}
+      {showEditHotelModal && selectedHotel && (
+        <AddHotelModal
+          destinations={destinations}
+          hotel={selectedHotel}
+          onClose={() => {
+            setShowEditHotelModal(false);
+            setSelectedHotel(null);
+          }}
+          onHotelAdded={handleHotelUpdated}
+        />
+      )}
     </div>
   );
 };
@@ -1115,6 +1435,568 @@ const InfoItem = ({ icon: Icon, label, value }) => {
       <div>
         <p className="text-xs text-slate-500">{label}</p>
         <p className="text-sm font-semibold text-slate-800">{value}</p>
+      </div>
+    </div>
+  );
+};
+
+// View Hotel Modal Component
+const ViewHotelModal = ({ hotel, onClose, onEdit, onDelete }) => {
+  if (!hotel) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-primary-600 to-accent-600 p-6 text-white">
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <h2 className="text-3xl font-bold mb-2">{hotel.name}</h2>
+              <div className="flex items-center space-x-4 text-sm">
+                <span className="flex items-center">
+                  <MapPin className="h-4 w-4 mr-1" />
+                  {hotel.destination_name}, {hotel.destination_country}
+                </span>
+                <span className="flex items-center">
+                  <Star className="h-4 w-4 mr-1 fill-yellow-300 text-yellow-300" />
+                  {hotel.rating || '0.0'}
+                </span>
+                <span className="flex items-center">
+                  <Hotel className="h-4 w-4 mr-1" />
+                  {hotel.total_rooms} rooms
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)] space-y-6">
+          {/* Basic Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <InfoItem icon={MapPin} label="Address" value={hotel.address} />
+            <InfoItem icon={Phone} label="Phone" value={hotel.phone} />
+            <InfoItem icon={Mail} label="Email" value={hotel.email} />
+            {hotel.website && <InfoItem icon={FileText} label="Website" value={hotel.website} />}
+          </div>
+
+          {/* Pricing Section */}
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 mb-4">Pricing (per night)</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm text-blue-600 font-medium">Single</p>
+                <p className="text-2xl font-bold text-blue-900">PKR {hotel.price_single}</p>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <p className="text-sm text-green-600 font-medium">Couple</p>
+                <p className="text-2xl font-bold text-green-900">PKR {hotel.price_couple}</p>
+              </div>
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <p className="text-sm text-purple-600 font-medium">Executive</p>
+                <p className="text-2xl font-bold text-purple-900">PKR {hotel.price_executive}</p>
+              </div>
+              <div className="bg-orange-50 p-4 rounded-lg">
+                <p className="text-sm text-orange-600 font-medium">Family</p>
+                <p className="text-2xl font-bold text-orange-900">PKR {hotel.price_family}</p>
+              </div>
+              {hotel.price_villa && (
+                <div className="bg-pink-50 p-4 rounded-lg">
+                  <p className="text-sm text-pink-600 font-medium">Villa</p>
+                  <p className="text-2xl font-bold text-pink-900">PKR {hotel.price_villa}</p>
+                </div>
+              )}
+              {hotel.price_entire_hotel && (
+                <div className="bg-indigo-50 p-4 rounded-lg">
+                  <p className="text-sm text-indigo-600 font-medium">Entire Hotel</p>
+                  <p className="text-2xl font-bold text-indigo-900">PKR {hotel.price_entire_hotel}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Amenities */}
+          {hotel.amenities && hotel.amenities.length > 0 && (
+            <div>
+              <h3 className="text-lg font-bold text-slate-800 mb-3">Amenities</h3>
+              <div className="flex flex-wrap gap-2">
+                {hotel.amenities.map((amenity, idx) => (
+                  <span key={idx} className="px-3 py-2 bg-accent-100 text-accent-700 rounded-lg text-sm font-medium">
+                    {amenity}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Description */}
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 mb-2">Description</h3>
+            <p className="text-slate-600 leading-relaxed">{hotel.description}</p>
+          </div>
+
+          {/* Check-in/out & Cancellation */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-slate-50 p-4 rounded-lg">
+              <p className="text-sm text-slate-600 mb-1">Check-in Time</p>
+              <p className="text-lg font-bold text-slate-800">{hotel.check_in_time}</p>
+            </div>
+            <div className="bg-slate-50 p-4 rounded-lg">
+              <p className="text-sm text-slate-600 mb-1">Check-out Time</p>
+              <p className="text-lg font-bold text-slate-800">{hotel.check_out_time}</p>
+            </div>
+          </div>
+
+          {hotel.cancellation_policy && (
+            <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+              <h4 className="font-bold text-yellow-800 mb-2">Cancellation Policy</h4>
+              <p className="text-sm text-yellow-700">{hotel.cancellation_policy}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 p-6 flex gap-3">
+          <button onClick={onEdit} className="flex-1 btn-primary py-3">
+            <Edit className="h-4 w-4 mr-2 inline" />
+            Edit Hotel
+          </button>
+          <button onClick={onDelete} className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium">
+            <Trash2 className="h-4 w-4 mr-2 inline" />
+            Delete
+          </button>
+          <button onClick={onClose} className="px-6 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-medium">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Add/Edit Hotel Modal Component
+const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
+  const [formData, setFormData] = useState({
+    destination: hotel?.destination || '',
+    name: hotel?.name || '',
+    description: hotel?.description || '',
+    address: hotel?.address || '',
+    phone: hotel?.phone || '',
+    email: hotel?.email || '',
+    website: hotel?.website || '',
+    price_single: hotel?.price_single || '',
+    price_couple: hotel?.price_couple || '',
+    price_executive: hotel?.price_executive || '',
+    price_family: hotel?.price_family || '',
+    price_villa: hotel?.price_villa || '',
+    price_entire_hotel: hotel?.price_entire_hotel || '',
+    amenities: hotel?.amenities || [],
+    rating: hotel?.rating || '',
+    total_rooms: hotel?.total_rooms || '',
+    check_in_time: hotel?.check_in_time || '2:00 PM',
+    check_out_time: hotel?.check_out_time || '12:00 PM',
+    cancellation_policy: hotel?.cancellation_policy || ''
+  });
+  const [amenityInput, setAmenityInput] = useState('');
+  const [destinationSearch, setDestinationSearch] = useState('');
+  const [showDestinationDropdown, setShowDestinationDropdown] = useState(false);
+  
+  // Filter destinations based on search
+  const filteredDestinations = destinations.filter(dest =>
+    dest.name.toLowerCase().includes(destinationSearch.toLowerCase()) ||
+    dest.country.toLowerCase().includes(destinationSearch.toLowerCase())
+  );
+  
+  // Get selected destination name for display
+  const selectedDestination = destinations.find(d => d.id === formData.destination);
+  const destinationDisplayName = selectedDestination 
+    ? `${selectedDestination.name}, ${selectedDestination.country}`
+    : '';
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (showDestinationDropdown && !e.target.closest('.destination-search-container')) {
+        setShowDestinationDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showDestinationDropdown]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const url = hotel 
+        ? `http://localhost:8000/api/hotels/${hotel.id}/`
+        : 'http://localhost:8000/api/hotels/';
+      
+      const method = hotel ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        onHotelAdded(data);
+        await Swal.fire({
+          icon: 'success',
+          title: hotel ? 'Updated!' : 'Added!',
+          text: hotel ? 'Hotel has been updated.' : 'Hotel has been added.',
+          confirmButtonColor: '#10b981',
+          timer: 2000
+        });
+      } else {
+        throw new Error('Failed to save hotel');
+      }
+    } catch (error) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to save hotel: ' + error.message,
+        confirmButtonColor: '#ef4444'
+      });
+    }
+  };
+
+  const addAmenity = () => {
+    if (amenityInput.trim() && !formData.amenities.includes(amenityInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        amenities: [...prev.amenities, amenityInput.trim()]
+      }));
+      setAmenityInput('');
+    }
+  };
+
+  const removeAmenity = (amenity) => {
+    setFormData(prev => ({
+      ...prev,
+      amenities: prev.amenities.filter(a => a !== amenity)
+    }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-primary-600 to-accent-600 p-6 text-white flex justify-between items-center">
+          <h2 className="text-2xl font-bold">{hotel ? 'Edit Hotel' : 'Add New Hotel'}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-180px)] space-y-6">
+          {/* Destination Selection with Search */}
+          <div className="relative destination-search-container">
+            <label className="block text-sm font-medium text-slate-700 mb-2">Destination *</label>
+            <div className="relative">
+              <input
+                type="text"
+                required
+                value={formData.destination ? destinationDisplayName : destinationSearch}
+                onChange={(e) => {
+                  setDestinationSearch(e.target.value);
+                  setFormData(prev => ({ ...prev, destination: '' }));
+                  setShowDestinationDropdown(true);
+                }}
+                onFocus={() => setShowDestinationDropdown(true)}
+                placeholder="Search destinations..."
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+            </div>
+            
+            {/* Dropdown List */}
+            {showDestinationDropdown && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {filteredDestinations.length === 0 ? (
+                  <div className="px-4 py-3 text-sm text-slate-500">
+                    No destinations found
+                  </div>
+                ) : (
+                  filteredDestinations.map(dest => (
+                    <button
+                      key={dest.id}
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, destination: dest.id }));
+                        setDestinationSearch('');
+                        setShowDestinationDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-primary-50 transition-colors border-b border-slate-100 last:border-b-0"
+                    >
+                      <div className="font-medium text-slate-800">{dest.name}</div>
+                      <div className="text-sm text-slate-500">{dest.country}</div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+            
+            {formData.destination && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData(prev => ({ ...prev, destination: '' }));
+                  setDestinationSearch('');
+                }}
+                className="absolute right-10 top-10 text-slate-400 hover:text-red-500"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Basic Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Hotel Name *</label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Phone</label>
+              <input
+                type="text"
+                value={formData.phone}
+                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Website</label>
+              <input
+                type="url"
+                value={formData.website}
+                onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Address *</label>
+            <textarea
+              required
+              value={formData.address}
+              onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+              rows="2"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Description *</label>
+            <textarea
+              required
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              rows="4"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="Describe the hotel, its features, and what makes it special..."
+            />
+          </div>
+
+          {/* Pricing */}
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 mb-3">Pricing (PKR per night) *</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Single</label>
+                <input
+                  type="number"
+                  required
+                  value={formData.price_single}
+                  onChange={(e) => setFormData(prev => ({ ...prev, price_single: e.target.value }))}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Couple</label>
+                <input
+                  type="number"
+                  required
+                  value={formData.price_couple}
+                  onChange={(e) => setFormData(prev => ({ ...prev, price_couple: e.target.value }))}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Executive</label>
+                <input
+                  type="number"
+                  required
+                  value={formData.price_executive}
+                  onChange={(e) => setFormData(prev => ({ ...prev, price_executive: e.target.value }))}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Family</label>
+                <input
+                  type="number"
+                  required
+                  value={formData.price_family}
+                  onChange={(e) => setFormData(prev => ({ ...prev, price_family: e.target.value }))}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Villa (optional)</label>
+                <input
+                  type="number"
+                  value={formData.price_villa}
+                  onChange={(e) => setFormData(prev => ({ ...prev, price_villa: e.target.value }))}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Entire Hotel (optional)</label>
+                <input
+                  type="number"
+                  value={formData.price_entire_hotel}
+                  onChange={(e) => setFormData(prev => ({ ...prev, price_entire_hotel: e.target.value }))}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Amenities */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Amenities</label>
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={amenityInput}
+                onChange={(e) => setAmenityInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAmenity())}
+                placeholder="Type amenity and press Enter"
+                className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+              <button
+                type="button"
+                onClick={addAmenity}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+              >
+                Add
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {formData.amenities.map((amenity, idx) => (
+                <span key={idx} className="px-3 py-1 bg-accent-100 text-accent-700 rounded-full text-sm flex items-center">
+                  {amenity}
+                  <button
+                    type="button"
+                    onClick={() => removeAmenity(amenity)}
+                    className="ml-2 text-accent-900 hover:text-red-600"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Additional Info */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Rating</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="5"
+                value={formData.rating}
+                onChange={(e) => setFormData(prev => ({ ...prev, rating: e.target.value }))}
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Total Rooms</label>
+              <input
+                type="number"
+                value={formData.total_rooms}
+                onChange={(e) => setFormData(prev => ({ ...prev, total_rooms: e.target.value }))}
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Check-in Time</label>
+              <input
+                type="text"
+                value={formData.check_in_time}
+                onChange={(e) => setFormData(prev => ({ ...prev, check_in_time: e.target.value }))}
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Check-out Time</label>
+              <input
+                type="text"
+                value={formData.check_out_time}
+                onChange={(e) => setFormData(prev => ({ ...prev, check_out_time: e.target.value }))}
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Cancellation Policy</label>
+            <textarea
+              value={formData.cancellation_policy}
+              onChange={(e) => setFormData(prev => ({ ...prev, cancellation_policy: e.target.value }))}
+              rows="3"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex gap-3 pt-4 border-t border-slate-200">
+            <button type="submit" className="flex-1 btn-primary py-3">
+              {hotel ? 'Update Hotel' : 'Add Hotel'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

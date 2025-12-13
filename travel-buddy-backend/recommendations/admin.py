@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Destination, UserPreference, Review
+from .models import Destination, UserPreference, Review, Hotel
 
 
 @admin.register(Destination)
@@ -8,6 +8,11 @@ class DestinationAdmin(admin.ModelAdmin):
     list_filter = ['category', 'price_range', 'country']
     search_fields = ['name', 'country', 'description']
     readonly_fields = ['created_at', 'updated_at']
+
+
+@admin.register(Hotel)
+class HotelAdmin(admin.ModelAdmin):
+    pass
 
 
 @admin.register(UserPreference)

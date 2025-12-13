@@ -58,6 +58,48 @@ class UserPreference(models.Model):
         return f"Preferences for {self.user.username}"
 
 
+class Hotel(models.Model):
+    """Model for hotels linked to destinations"""
+    destination = models.ForeignKey(Destination, on_delete=models.CASCADE, related_name='hotels')
+    name = models.CharField(max_length=200)
+    description = models.TextField()
+    address = models.TextField()
+    phone = models.CharField(max_length=50, blank=True)
+    email = models.EmailField(blank=True)
+    website = models.URLField(blank=True)
+    
+    # Images
+    image_main = models.ImageField(upload_to='hotels/', null=True, blank=True)
+    image_gallery = models.JSONField(default=list, help_text="List of additional image URLs")
+    
+    # Pricing tiers (in PKR)
+    price_single = models.DecimalField(max_digits=10, decimal_places=2, help_text="Price per night for single person")
+    price_couple = models.DecimalField(max_digits=10, decimal_places=2, help_text="Price per night for couple")
+    price_executive = models.DecimalField(max_digits=10, decimal_places=2, help_text="Price per night for executive room")
+    price_family = models.DecimalField(max_digits=10, decimal_places=2, help_text="Price per night for family room")
+    price_entire_hotel = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Price for entire hotel (optional)")
+    price_villa = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Price for villa (optional)")
+    
+    # Amenities and features
+    amenities = models.JSONField(default=list, help_text="List of amenities: WiFi, Pool, Spa, Restaurant, etc.")
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
+    total_rooms = models.IntegerField(default=10)
+    
+    # Additional info
+    check_in_time = models.CharField(max_length=20, default="2:00 PM")
+    check_out_time = models.CharField(max_length=20, default="12:00 PM")
+    cancellation_policy = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-rating', 'name']
+
+    def __str__(self):
+        return f"{self.name} - {self.destination.name}"
+
+
 class Review(models.Model):
     """Model for destination reviews"""
     destination = models.ForeignKey(Destination, on_delete=models.CASCADE, related_name='reviews')
