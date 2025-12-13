@@ -145,98 +145,57 @@ class DestinationViewSet(viewsets.ModelViewSet):
         from .nlp_processor import NLPProcessor
         nlp_result = NLPProcessor.process_query(query)
         
-        # Filter destinations by hotel prices if budget and room type specified
-        filtered_destinations = search_results['destinations']
-        if nlp_result.get('budget') and nlp_result.get('room_type'):
-            budget = nlp_result['budget']
-            room_type = nlp_result['room_type']
-            price_field = f'price_{room_type}'
-            
-            # Get destinations with hotels within budget
-            destination_ids_with_hotels = Hotel.objects.filter(
-                **{f'{price_field}__lte': budget}
-            ).values_list('destination_id', flat=True)
-            
-            filtered_destinations = [
-                dest for dest in filtered_destinations 
-                if dest.id in destination_ids_with_hotels
-            ]
+        # Add hotel information and filter destinations
+        room_type = nlp_result.get('room_type', 'couple')
+        budget = nlp_result.get('budget')
+        days = nlp_result.get('days') or 1
         
-        # Serialize destinations
-        serializer = self.get_serializer(filtered_destinations, many=True)
-        results_data = serializer.data
+        # Process destinations and build results with hotels
+        filtered_destinations = []
+        results_data = []
         
-        # Add hotel information to each destination
-        for i, dest in enumerate(filtered_destinations):
+        for dest in search_results['destinations']:
             # Get the best hotel for this destination
             hotels = Hotel.objects.filter(destination=dest).order_by('-rating')
             
-            if nlp_result.get('budget') and nlp_result.get('room_type'):
-                room_type = nlp_result['room_type']
+            # Filter by budget if specified
+            if budget and room_type:
                 price_field = f'price_{room_type}'
-                hotels = hotels.filter(**{f'{price_field}__lte': nlp_result['budget']})
+                # Calculate max price per night based on total budget and days
+                max_price_per_night = budget / days
+                # Filter hotels where price_per_night * days <= budget
+                hotels = hotels.filter(**{f'{price_field}__lte': max_price_per_night})
             
+            # Only include destination if it has at least one hotel meeting criteria
             if hotels.exists():
                 best_hotel = hotels.first()
-                room_type = nlp_result.get('room_type', 'couple')
                 price_per_night = getattr(best_hotel, f'price_{room_type}', best_hotel.price_couple)
-                days = nlp_result.get('days') or 1  # Default to 1 if None or not specified
+                total_price = float(price_per_night * days)
                 
-                results_data[i]['hotel'] = {
-                    'name': best_hotel.name,
-                    'rating': float(best_hotel.rating),
-                    'room_type': room_type,
-                    'price_per_night': float(price_per_night),
-                    'days': days,
-                    'total_price': float(price_per_night * days),
-                    'amenities': best_hotel.amenities[:4] if best_hotel.amenities else []
-                }
+                # Only add if total price is within budget
+                if not budget or total_price <= budget:
+                    filtered_destinations.append(dest)
+                    
+                    # Serialize this destination
+                    dest_data = self.get_serializer(dest).data
+                    dest_data['hotel'] = {
+                        'name': best_hotel.name,
+                        'rating': float(best_hotel.rating),
+                        'room_type': room_type,
+                        'price_per_night': float(price_per_night),
+                        'days': days,
+                        'total_price': total_price,
+                        'amenities': best_hotel.amenities[:4] if best_hotel.amenities else []
+                    }
+                    results_data.append(dest_data)
+            elif not budget:
+                # If no budget specified, include all destinations (even without hotels)
+                filtered_destinations.append(dest)
+                dest_data = self.get_serializer(dest).data
+                results_data.append(dest_data)
         
-        # Fetch current weather for each destination (if requested and has coordinates)
-        if fetch_weather:
-            for i, dest in enumerate(filtered_destinations):
-                if dest.latitude and dest.longitude:
-                    try:
-                        # Fetch weather from Open-Meteo
-                        weather_url = 'https://api.open-meteo.com/v1/forecast'
-                        weather_params = {
-                            'latitude': float(dest.latitude),
-                            'longitude': float(dest.longitude),
-                            'current': 'temperature_2m,weather_code,wind_speed_10m',
-                            'timezone': 'auto'
-                        }
-                        weather_response = requests.get(weather_url, params=weather_params, timeout=5)
-                        
-                        if weather_response.status_code == 200:
-                            weather_data = weather_response.json()
-                            current = weather_data.get('current', {})
-                            
-                            # Map weather code to description
-                            weather_code = current.get('weather_code', 0)
-                            weather_map = {
-                                0: 'Clear', 1: 'Mainly Clear', 2: 'Partly Cloudy', 3: 'Overcast',
-                                45: 'Foggy', 48: 'Foggy', 
-                                51: 'Drizzle', 53: 'Drizzle', 55: 'Drizzle',
-                                61: 'Light Rain', 63: 'Rain', 65: 'Heavy Rain',
-                                71: 'Light Snow', 73: 'Snow', 75: 'Heavy Snow',
-                                80: 'Rain Showers', 81: 'Rain Showers', 82: 'Heavy Rain Showers',
-                                85: 'Snow Showers', 86: 'Heavy Snow Showers',
-                                95: 'Thunderstorm', 96: 'Thunderstorm', 99: 'Thunderstorm'
-                            }
-                            
-                            weather_desc = weather_map.get(weather_code, 'Unknown')
-                            temp = current.get('temperature_2m', 0)
-                            
-                            # Add current weather to result
-                            results_data[i]['current_weather'] = {
-                                'temperature': temp,
-                                'condition': weather_desc,
-                                'description': f"{weather_desc}, {temp}°C"
-                            }
-                    except Exception as e:
-                        # If weather fetch fails, continue without it
-                        print(f"Weather fetch failed for {dest.name}: {e}")
-                        pass
+        # Don't fetch weather here - it blocks the response
+        # Weather will be loaded separately on the frontend
         
         # Generate search summary
         summary = SmartSearch.generate_search_summary(search_results['keywords'])

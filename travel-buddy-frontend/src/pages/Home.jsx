@@ -22,6 +22,7 @@ const Home = ({ user, onLogout }) => {
   const [searchResults, setSearchResults] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchSummary, setSearchSummary] = useState('');
+  const [weatherLoading, setWeatherLoading] = useState({});
 
   // Voice input hook
   const { isListening, isSupported, toggleListening, changeLanguage } = useVoiceInput(
@@ -37,11 +38,44 @@ const Home = ({ user, onLogout }) => {
     setShowLanguageMenu(false);
   };
 
+  const fetchWeatherForDestination = async (destination, index) => {
+    // Mark this destination's weather as loading
+    setWeatherLoading(prev => ({ ...prev, [destination.id]: true }));
+
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/weather/?lat=${destination.latitude}&lon=${destination.longitude}`
+      );
+      
+      if (response.ok) {
+        const weatherData = await response.json();
+        
+        // Update the specific destination with weather data
+        setSearchResults(prevResults => {
+          const newResults = [...prevResults];
+          newResults[index] = {
+            ...newResults[index],
+            current_weather: {
+              temperature: weatherData.temperature,
+              description: weatherData.description
+            }
+          };
+          return newResults;
+        });
+      }
+    } catch (error) {
+      console.error(`Weather fetch failed for ${destination.name}:`, error);
+    } finally {
+      setWeatherLoading(prev => ({ ...prev, [destination.id]: false }));
+    }
+  };
+
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
 
     setSearchLoading(true);
+    setWeatherLoading({});
     try {
       const response = await fetch(
         `http://localhost:8000/api/destinations/smart_search/?q=${encodeURIComponent(query)}&limit=20`
@@ -64,6 +98,15 @@ const Home = ({ user, onLogout }) => {
         }
         
         setSearchSummary(summary);
+
+        // Fetch weather for each destination asynchronously
+        if (data.results && data.results.length > 0) {
+          data.results.forEach((dest, index) => {
+            if (dest.latitude && dest.longitude) {
+              fetchWeatherForDestination(dest, index);
+            }
+          });
+        }
 
         // Scroll to search results
         const resultsElement = document.getElementById('search-results');
@@ -488,9 +531,9 @@ const Home = ({ user, onLogout }) => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {searchResults.map((dest, index) => (
-                  <TrendingCard key={dest.id} destination={dest} delay={index * 0.1} />
+                  <TrendingCard key={dest.id} destination={dest} weatherLoading={weatherLoading} delay={index * 0.05} />
                 ))}
               </div>
             )}
@@ -704,7 +747,7 @@ const CategoryCard = ({ category, isSelected, onClick, delay }) => (
 );
 
 // Trending Card Component
-const TrendingCard = ({ destination, delay }) => (
+const TrendingCard = ({ destination, weatherLoading = {}, delay }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -795,8 +838,18 @@ const TrendingCard = ({ destination, delay }) => (
         </div>
       )}
       
+      {/* Weather Loading Indicator */}
+      {!destination.current_weather && weatherLoading[destination.id] && (
+        <div className="flex items-center space-x-2 mb-2 text-xs">
+          <div className="flex items-center bg-slate-100 text-slate-600 px-2 py-1 rounded-full animate-pulse">
+            <Cloud className="h-3 w-3 mr-1 animate-spin" />
+            <span>Loading weather...</span>
+          </div>
+        </div>
+      )}
+      
       {/* Stored Weather (Fallback) */}
-      {!destination.current_weather && destination.general_weather && (
+      {!destination.current_weather && !weatherLoading[destination.id] && destination.general_weather && (
         <div className="flex items-center space-x-2 mb-2 text-xs">
           <div className="flex items-center bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
             <Cloud className="h-3 w-3 mr-1" />
