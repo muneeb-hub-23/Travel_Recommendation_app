@@ -114,6 +114,65 @@ const AddDestinationForm = ({ onClose, onSubmit, initialData = null, isEdit = fa
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Handle clipboard paste for images
+  useEffect(() => {
+    const handlePaste = async (e) => {
+      // Get clipboard items
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      // Look for an image in clipboard
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        
+        // Check if item is an image
+        if (item.type.indexOf('image') !== -1) {
+          e.preventDefault();
+          
+          // Get the blob from clipboard
+          const blob = item.getAsFile();
+          if (!blob) continue;
+
+          // Create a File object with a proper name
+          const timestamp = new Date().getTime();
+          const file = new File([blob], `pasted-image-${timestamp}.png`, { type: blob.type });
+          
+          // Set the image in form data
+          setFormData(prev => ({ ...prev, image: file }));
+          
+          // Create preview
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setImagePreview(reader.result);
+          };
+          reader.readAsDataURL(file);
+          
+          // Show success notification
+          await Swal.fire({
+            icon: 'success',
+            title: 'Image Pasted!',
+            text: 'Image from clipboard has been added',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true
+          });
+          
+          break;
+        }
+      }
+    };
+
+    // Add paste event listener
+    document.addEventListener('paste', handlePaste);
+    
+    // Cleanup
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -383,6 +442,9 @@ const AddDestinationForm = ({ onClose, onSubmit, initialData = null, isEdit = fa
                     />
                   </label>
                 </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  💡 Tip: Press <kbd className="px-2 py-1 bg-slate-100 border border-slate-300 rounded text-xs font-mono">Ctrl+V</kbd> to paste image from clipboard
+                </p>
                 {imagePreview && (
                   <img
                     src={imagePreview}

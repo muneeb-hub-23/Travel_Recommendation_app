@@ -378,20 +378,22 @@ const Home = ({ user, onLogout }) => {
           </Section>
         )}
 
-        {/* Destination Categories */}
-        <Section title="Choose Your Destination Type" icon={Mountain}>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {destinationCategories.map((category, index) => (
-              <CategoryCard
-                key={category.id}
-                category={category}
-                isSelected={selectedCategory === category.id}
-                onClick={() => setSelectedCategory(category.id === selectedCategory ? null : category.id)}
-                delay={index * 0.1}
-              />
-            ))}
-          </div>
-        </Section>
+        {/* Destination Categories - Only for logged-in users */}
+        {user && (
+          <Section title="Choose Your Destination Type" icon={Mountain}>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {destinationCategories.map((category, index) => (
+                <CategoryCard
+                  key={category.id}
+                  category={category}
+                  isSelected={selectedCategory === category.id}
+                  onClick={() => setSelectedCategory(category.id === selectedCategory ? null : category.id)}
+                  delay={index * 0.1}
+                />
+              ))}
+            </div>
+          </Section>
+        )}
 
         {/* Trending Destinations */}
         <Section title="Trending Destinations" icon={TrendingUp}>
@@ -415,53 +417,61 @@ const Home = ({ user, onLogout }) => {
           )}
         </Section>
 
-        {/* Hotel Categories */}
-        <Section title="Select Accommodation" icon={Building2}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {hotelCategories.map((hotel, index) => (
-              <HotelCard
-                key={hotel.id}
-                hotel={hotel}
-                isSelected={selectedHotel === hotel.id}
-                onClick={() => setSelectedHotel(hotel.id === selectedHotel ? null : hotel.id)}
-                delay={index * 0.1}
-              />
-            ))}
-          </div>
-        </Section>
+        {/* Hotel Categories - Only for logged-in users */}
+        {user && (
+          <Section title="Select Accommodation" icon={Building2}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {hotelCategories.map((hotel, index) => (
+                <HotelCard
+                  key={hotel.id}
+                  hotel={hotel}
+                  isSelected={selectedHotel === hotel.id}
+                  onClick={() => setSelectedHotel(hotel.id === selectedHotel ? null : hotel.id)}
+                  delay={index * 0.1}
+                />
+              ))}
+            </div>
+          </Section>
+        )}
 
-        {/* Travel Options */}
-        <Section title="Choose Travel Mode" icon={Plane}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {travelOptions.map((option, index) => (
-              <TravelCard
-                key={option.id}
-                option={option}
-                isSelected={selectedTravel === option.id}
-                onClick={() => setSelectedTravel(option.id === selectedTravel ? null : option.id)}
-                delay={index * 0.1}
-              />
-            ))}
-          </div>
-        </Section>
+        {/* Travel Options - Only for logged-in users */}
+        {user && (
+          <Section title="Choose Travel Mode" icon={Plane}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {travelOptions.map((option, index) => (
+                <TravelCard
+                  key={option.id}
+                  option={option}
+                  isSelected={selectedTravel === option.id}
+                  onClick={() => setSelectedTravel(option.id === selectedTravel ? null : option.id)}
+                  delay={index * 0.1}
+                />
+              ))}
+            </div>
+          </Section>
+        )}
 
-        {/* Food Options */}
-        <Section title="Food Preferences" icon={UtensilsCrossed}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {foodOptions.map((food, index) => (
-              <FoodCard key={food.id} food={food} delay={index * 0.1} />
-            ))}
-          </div>
-        </Section>
+        {/* Food Options - Only for logged-in users */}
+        {user && (
+          <Section title="Food Preferences" icon={UtensilsCrossed}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {foodOptions.map((food, index) => (
+                <FoodCard key={food.id} food={food} delay={index * 0.1} />
+              ))}
+            </div>
+          </Section>
+        )}
 
-        {/* Weather Preferences */}
-        <Section title="Preferred Weather" icon={Cloud}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {weatherOptions.map((weather, index) => (
-              <WeatherCard key={weather.id} weather={weather} delay={index * 0.1} />
-            ))}
-          </div>
-        </Section>
+        {/* Weather Preferences - Only for logged-in users */}
+        {user && (
+          <Section title="Preferred Weather" icon={Cloud}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {weatherOptions.map((weather, index) => (
+                <WeatherCard key={weather.id} weather={weather} delay={index * 0.1} />
+              ))}
+            </div>
+          </Section>
+        )}
       </div>
     </div>
   );

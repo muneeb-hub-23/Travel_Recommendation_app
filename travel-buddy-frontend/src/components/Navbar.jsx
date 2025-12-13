@@ -33,14 +33,18 @@ const Navbar = ({ user, onLogout }) => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
-            <Link to="/" className="flex items-center space-x-1 text-slate-600 hover:text-primary-600 transition-colors">
-              <Map className="h-4 w-4" />
-              <span>Explore</span>
-            </Link>
-            <Link to="/" className="flex items-center space-x-1 text-slate-600 hover:text-primary-600 transition-colors">
-              <Calendar className="h-4 w-4" />
-              <span>My Trips</span>
-            </Link>
+            {user && (
+              <>
+                <Link to="/" className="flex items-center space-x-1 text-slate-600 hover:text-primary-600 transition-colors">
+                  <Map className="h-4 w-4" />
+                  <span>Explore</span>
+                </Link>
+                <Link to="/" className="flex items-center space-x-1 text-slate-600 hover:text-primary-600 transition-colors">
+                  <Calendar className="h-4 w-4" />
+                  <span>My Trips</span>
+                </Link>
+              </>
+            )}
             
             {user ? (
               <div className="flex items-center space-x-4">
@@ -87,22 +91,26 @@ const Navbar = ({ user, onLogout }) => {
           className="md:hidden border-t border-slate-200 bg-white"
         >
           <div className="px-4 py-4 space-y-3">
-            <Link
-              to="/"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-50 rounded-lg transition-colors"
-            >
-              <Map className="h-5 w-5 text-primary-600" />
-              <span>Explore</span>
-            </Link>
-            <Link
-              to="/"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-50 rounded-lg transition-colors"
-            >
-              <Calendar className="h-5 w-5 text-primary-600" />
-              <span>My Trips</span>
-            </Link>
+            {user && (
+              <>
+                <Link
+                  to="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-50 rounded-lg transition-colors"
+                >
+                  <Map className="h-5 w-5 text-primary-600" />
+                  <span>Explore</span>
+                </Link>
+                <Link
+                  to="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-50 rounded-lg transition-colors"
+                >
+                  <Calendar className="h-5 w-5 text-primary-600" />
+                  <span>My Trips</span>
+                </Link>
+              </>
+            )}
             
             {user ? (
               <>
