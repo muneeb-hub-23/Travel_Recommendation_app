@@ -160,3 +160,6 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
 }
+
+# Weather API Configuration
+# Using Open-Meteo API (free, no API key required)

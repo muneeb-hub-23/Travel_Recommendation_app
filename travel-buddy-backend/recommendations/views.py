@@ -1,8 +1,10 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.db.models import Q, Avg
+import requests
+from django.conf import settings
 from .models import Destination, UserPreference, Review
 from .serializers import (
     DestinationSerializer, 
@@ -21,7 +23,7 @@ class DestinationViewSet(viewsets.ModelViewSet):
     """ViewSet for Destination model"""
     queryset = Destination.objects.all()
     serializer_class = DestinationSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [AllowAny]  # Allow all operations without authentication
 
     def get_queryset(self):
         queryset = Destination.objects.all()
@@ -120,20 +122,22 @@ class UserPreferenceViewSet(viewsets.ModelViewSet):
     """ViewSet for UserPreference model"""
     queryset = UserPreference.objects.all()
     serializer_class = UserPreferenceSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # Allow all operations without authentication
 
     def get_queryset(self):
-        return UserPreference.objects.filter(user=self.request.user)
+        # Return all preferences without user filtering (auth disabled)
+        return UserPreference.objects.all()
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        # Save without user assignment (auth disabled)
+        serializer.save()
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
     """ViewSet for Review model"""
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [AllowAny]  # Allow all operations without authentication
 
     def get_queryset(self):
         queryset = Review.objects.all()
@@ -154,3 +158,126 @@ class ReviewViewSet(viewsets.ModelViewSet):
         avg_rating = destination.reviews.aggregate(Avg('rating'))['rating__avg']
         destination.rating = avg_rating or 0.0
         destination.save()
+
+
+@api_view(['GET'])
+def get_weather(request):
+    """Get real-time weather data for a location using Open-Meteo API"""
+    city = request.query_params.get('city', None)
+    lat = request.query_params.get('lat', None)
+    lon = request.query_params.get('lon', None)
+    
+    if not city and not (lat and lon):
+        return Response(
+            {'error': 'Please provide either city name or coordinates (lat, lon)'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        # If city is provided, use geocoding to get coordinates
+        if city:
+            geocoding_url = 'https://geocoding-api.open-meteo.com/v1/search'
+            geocoding_params = {
+                'name': city,
+                'count': 1,
+                'language': 'en',
+                'format': 'json'
+            }
+            
+            geo_response = requests.get(geocoding_url, params=geocoding_params, timeout=10)
+            geo_response.raise_for_status()
+            geo_data = geo_response.json()
+            
+            if not geo_data.get('results'):
+                return Response(
+                    {'error': f'City "{city}" not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            location_info = geo_data['results'][0]
+            lat = location_info['latitude']
+            lon = location_info['longitude']
+            location_name = location_info['name']
+            if 'country' in location_info:
+                location_name += f", {location_info['country']}"
+        else:
+            location_name = f"Location ({lat}, {lon})"
+        
+        # Fetch weather data from Open-Meteo
+        weather_url = 'https://api.open-meteo.com/v1/forecast'
+        weather_params = {
+            'latitude': lat,
+            'longitude': lon,
+            'current': 'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m',
+            'timezone': 'auto'
+        }
+        
+        weather_response = requests.get(weather_url, params=weather_params, timeout=10)
+        weather_response.raise_for_status()
+        weather_data = weather_response.json()
+        
+        current = weather_data['current']
+        
+        # Map WMO weather codes to descriptions
+        weather_code = current.get('weather_code', 0)
+        weather_descriptions = {
+            0: ('Clear', 'clear sky'),
+            1: ('Mainly Clear', 'mainly clear'),
+            2: ('Partly Cloudy', 'partly cloudy'),
+            3: ('Overcast', 'overcast'),
+            45: ('Foggy', 'fog'),
+            48: ('Foggy', 'depositing rime fog'),
+            51: ('Drizzle', 'light drizzle'),
+            53: ('Drizzle', 'moderate drizzle'),
+            55: ('Drizzle', 'dense drizzle'),
+            61: ('Rain', 'slight rain'),
+            63: ('Rain', 'moderate rain'),
+            65: ('Rain', 'heavy rain'),
+            71: ('Snow', 'slight snow'),
+            73: ('Snow', 'moderate snow'),
+            75: ('Snow', 'heavy snow'),
+            77: ('Snow', 'snow grains'),
+            80: ('Rain Showers', 'slight rain showers'),
+            81: ('Rain Showers', 'moderate rain showers'),
+            82: ('Rain Showers', 'violent rain showers'),
+            85: ('Snow Showers', 'slight snow showers'),
+            86: ('Snow Showers', 'heavy snow showers'),
+            95: ('Thunderstorm', 'thunderstorm'),
+            96: ('Thunderstorm', 'thunderstorm with slight hail'),
+            99: ('Thunderstorm', 'thunderstorm with heavy hail'),
+        }
+        
+        weather_main, weather_desc = weather_descriptions.get(weather_code, ('Unknown', 'unknown'))
+        
+        # Format the response to match the original structure
+        formatted_data = {
+            'location': location_name,
+            'temperature': current['temperature_2m'],
+            'feels_like': current['apparent_temperature'],
+            'temp_min': current['temperature_2m'],  # Open-Meteo doesn't provide min/max in current, same as current
+            'temp_max': current['temperature_2m'],  # Open-Meteo doesn't provide min/max in current, same as current
+            'humidity': current['relative_humidity_2m'],
+            'pressure': current['pressure_msl'],
+            'weather': weather_main,
+            'description': weather_desc,
+            'icon': str(weather_code).zfill(2) + 'd',  # Use weather code as icon reference
+            'wind_speed': current['wind_speed_10m'],
+            'clouds': current['cloud_cover'],
+            'coordinates': {
+                'lat': float(lat),
+                'lon': float(lon)
+            }
+        }
+        
+        return Response(formatted_data)
+        
+    except requests.exceptions.RequestException as e:
+        return Response(
+            {'error': f'Failed to fetch weather data: {str(e)}'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+    except (KeyError, IndexError) as e:
+        return Response(
+            {'error': f'Invalid response from weather API: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

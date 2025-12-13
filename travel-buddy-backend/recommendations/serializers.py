@@ -13,7 +13,8 @@ class DestinationSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'country', 'description', 'image', 
             'category', 'price_range', 'best_season', 'rating',
-            'latitude', 'longitude', 'average_rating', 'review_count',
+            'latitude', 'longitude', 'travel_options', 'general_weather',
+            'weather_area', 'average_rating', 'review_count',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']

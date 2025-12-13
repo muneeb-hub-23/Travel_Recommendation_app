@@ -1,16 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import Swal from 'sweetalert2';
 import { 
   Users, MapPin, Hotel, TrendingUp, 
   Settings, LogOut, Menu, X, BarChart3,
   PieChart, Activity, Star, MessageSquare, Bell,
   FileText, Database, Shield, Mail, Phone, Edit, Trash2,
-  Plus, Search, Filter, Eye, ThumbsUp, ThumbsDown
+  Plus, Search, Filter, Eye, ThumbsUp, ThumbsDown, Cloud
 } from 'lucide-react';
+import AddDestinationForm from '../../components/AddDestinationForm';
 
 const AdminDashboard = ({ admin, onLogout }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(() => {
+    // Restore active tab from localStorage on mount
+    return localStorage.getItem('adminActiveTab') || 'overview';
+  });
+  const [showAddDestination, setShowAddDestination] = useState(false);
+  const [destinations, setDestinations] = useState([]);
+  const [selectedDestination, setSelectedDestination] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  // Save active tab to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('adminActiveTab', activeTab);
+  }, [activeTab]);
 
   const stats = [
     { id: 1, label: 'Total Users', value: '12,458', change: '+12.5%', icon: Users, color: 'from-blue-500 to-cyan-500' },
@@ -36,16 +51,24 @@ const AdminDashboard = ({ admin, onLogout }) => {
     { id: 5, name: 'Fairy Meadows', visits: 165, rating: 4.9, reviews: 128, category: 'Alpine' },
   ];
 
-  const allDestinations = [
-    { id: 1, name: 'Hunza Valley', location: 'Gilgit-Baltistan', visits: 245, rating: 4.9, reviews: 189, category: 'Mountain', status: 'active' },
-    { id: 2, name: 'Murree Hills', location: 'Punjab', visits: 198, rating: 4.7, reviews: 156, category: 'Hill Station', status: 'active' },
-    { id: 3, name: 'Swat Valley', location: 'Khyber Pakhtunkhwa', visits: 187, rating: 4.8, reviews: 174, category: 'Valley', status: 'active' },
-    { id: 4, name: 'Naran Kaghan', location: 'Khyber Pakhtunkhwa', visits: 176, rating: 4.6, reviews: 142, category: 'Mountain', status: 'active' },
-    { id: 5, name: 'Fairy Meadows', location: 'Gilgit-Baltistan', visits: 165, rating: 4.9, reviews: 128, category: 'Alpine', status: 'active' },
-    { id: 6, name: 'Skardu', location: 'Gilgit-Baltistan', visits: 152, rating: 4.8, reviews: 135, category: 'Valley', status: 'active' },
-    { id: 7, name: 'Neelum Valley', location: 'Azad Kashmir', visits: 144, rating: 4.7, reviews: 118, category: 'Valley', status: 'inactive' },
-    { id: 8, name: 'Chitral', location: 'Khyber Pakhtunkhwa', visits: 132, rating: 4.5, reviews: 102, category: 'Mountain', status: 'active' },
-  ];
+  // Fetch destinations from API on component mount
+  useEffect(() => {
+    const fetchDestinations = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/destinations/');
+        if (response.ok) {
+          const data = await response.json();
+          // Handle both paginated and non-paginated responses
+          setDestinations(Array.isArray(data) ? data : (data.results || []));
+        }
+      } catch (error) {
+        console.error('Error fetching destinations:', error);
+        setDestinations([]); // Set empty array on error
+      }
+    };
+
+    fetchDestinations();
+  }, []);
 
   const allReviews = [
     { id: 1, user: 'Ahmad Khan', destination: 'Hunza Valley', rating: 5, comment: 'Absolutely stunning! The views were breathtaking and the local hospitality was amazing.', date: '2 hours ago', sentiment: 'positive' },
@@ -96,6 +119,137 @@ const AdminDashboard = ({ admin, onLogout }) => {
       sessionTimeout: 30,
       maxLoginAttempts: 5,
     },
+  };
+
+  const handleViewDestination = (dest) => {
+    setSelectedDestination(dest);
+    setShowViewModal(true);
+  };
+
+  const handleEditDestination = (dest) => {
+    setSelectedDestination(dest);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateDestination = async (formData) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/destinations/${selectedDestination.id}/`, {
+        method: 'PUT',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const updatedDestination = await response.json();
+        setDestinations(prev => prev.map(dest => 
+          dest.id === updatedDestination.id ? updatedDestination : dest
+        ));
+        setShowEditModal(false);
+        setSelectedDestination(null);
+        await Swal.fire({
+          icon: 'success',
+          title: 'Updated!',
+          text: 'Destination updated successfully!',
+          confirmButtonColor: '#10b981',
+          timer: 2000
+        });
+      } else {
+        const error = await response.json();
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error updating destination: ' + JSON.stringify(error),
+          confirmButtonColor: '#ef4444'
+        });
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Failed',
+        text: 'Failed to update destination: ' + error.message,
+        confirmButtonColor: '#ef4444'
+      });
+    }
+  };
+
+  const handleDeleteDestination = async (destId) => {
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Are you sure?',
+      text: 'This action cannot be undone!',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await fetch(`http://localhost:8000/api/destinations/${destId}/`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          setDestinations(prev => prev.filter(dest => dest.id !== destId));
+          await Swal.fire({
+            icon: 'success',
+            title: 'Deleted!',
+            text: 'Destination has been deleted.',
+            confirmButtonColor: '#10b981',
+            timer: 2000
+          });
+        } else {
+          throw new Error('Failed to delete');
+        }
+      } catch (error) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to delete destination',
+          confirmButtonColor: '#ef4444'
+        });
+      }
+    }
+  };
+
+  const handleAddDestination = async (formData) => {
+    try {
+      const response = await fetch('http://localhost:8000/api/destinations/', {
+        method: 'POST',
+        body: formData,
+        // Don't set Content-Type header - browser will set it automatically with boundary
+      });
+
+      if (response.ok) {
+        const newDestination = await response.json();
+        setDestinations(prev => [...prev, newDestination]);
+        setShowAddDestination(false);
+        await Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: 'Destination added successfully!',
+          confirmButtonColor: '#10b981',
+          timer: 2000
+        });
+      } else {
+        const error = await response.json();
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error adding destination: ' + JSON.stringify(error),
+          confirmButtonColor: '#ef4444'
+        });
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Failed',
+        text: 'Failed to add destination: ' + error.message,
+        confirmButtonColor: '#ef4444'
+      });
+    }
   };
 
   const menuItems = [
@@ -402,55 +556,92 @@ const AdminDashboard = ({ admin, onLogout }) => {
               <div className="card p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-slate-800">Destinations</h2>
-                  <button className="btn-primary flex items-center space-x-2">
+                  <button 
+                    onClick={() => setShowAddDestination(true)}
+                    className="btn-primary flex items-center space-x-2"
+                  >
                     <Plus className="h-4 w-4" />
                     <span>Add Destination</span>
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {allDestinations.map((dest) => (
-                    <div key={dest.id} className="card p-4 hover:shadow-lg transition-shadow">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h3 className="font-bold text-slate-800 mb-1">{dest.name}</h3>
-                          <p className="text-sm text-slate-600">{dest.location}</p>
+                {destinations.length === 0 ? (
+                  <div className="text-center py-12">
+                    <MapPin className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-600 mb-4">No destinations added yet</p>
+                    <button 
+                      onClick={() => setShowAddDestination(true)}
+                      className="btn-primary"
+                    >
+                      Add Your First Destination
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {destinations.map((dest) => (
+                      <div key={dest.id} className="card p-4 hover:shadow-lg transition-shadow">
+                        {dest.image && (
+                          <img 
+                            src={dest.image.startsWith('http') ? dest.image : `http://localhost:8000${dest.image}`}
+                            alt={dest.name}
+                            className="w-full h-48 object-cover rounded-lg mb-3"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                            }}
+                          />
+                        )}
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <h3 className="font-bold text-slate-800 mb-1">{dest.name}</h3>
+                            <p className="text-sm text-slate-600">{dest.country}</p>
+                          </div>
                         </div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          dest.status === 'active'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-slate-100 text-slate-700'
-                        }`}>
-                          {dest.status}
+                        
+                        <div className="flex items-center space-x-4 mb-3">
+                          <div className="flex items-center space-x-1">
+                            <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                            <span className="text-sm font-medium">{dest.rating || '0.0'}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <MessageSquare className="h-4 w-4 text-accent-600" />
+                            <span className="text-sm">{dest.review_count || 0}</span>
+                          </div>
+                        </div>
+
+                        <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium mb-3">
+                          {dest.category}
                         </span>
-                      </div>
-                      
-                      <div className="flex items-center space-x-4 mb-3">
-                        <div className="flex items-center space-x-1">
-                          <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                          <span className="text-sm font-medium">{dest.rating}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <MapPin className="h-4 w-4 text-primary-600" />
-                          <span className="text-sm">{dest.visits} visits</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <MessageSquare className="h-4 w-4 text-accent-600" />
-                          <span className="text-sm">{dest.reviews}</span>
-                        </div>
-                      </div>
 
-                      <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium mb-3">
-                        {dest.category}
-                      </span>
+                        <p className="text-sm text-slate-600 mb-3 line-clamp-2">{dest.description}</p>
 
-                      <div className="flex space-x-2">
-                        <button className="flex-1 btn-secondary text-sm py-2">View</button>
-                        <button className="flex-1 btn-primary text-sm py-2">Edit</button>
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => handleViewDestination(dest)}
+                            className="flex-1 btn-secondary text-sm py-2 flex items-center justify-center"
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </button>
+                          <button 
+                            onClick={() => handleEditDestination(dest)}
+                            className="flex-1 btn-primary text-sm py-2 flex items-center justify-center"
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteDestination(dest.id)}
+                            className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -751,6 +942,179 @@ const AdminDashboard = ({ admin, onLogout }) => {
             )}
           </motion.div>
         </main>
+      </div>
+
+      {/* Add Destination Modal */}
+      {showAddDestination && (
+        <AddDestinationForm
+          onClose={() => setShowAddDestination(false)}
+          onSubmit={handleAddDestination}
+        />
+      )}
+
+      {/* Edit Destination Modal */}
+      {showEditModal && selectedDestination && (
+        <AddDestinationForm
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedDestination(null);
+          }}
+          onSubmit={handleUpdateDestination}
+          initialData={selectedDestination}
+          isEdit={true}
+        />
+      )}
+
+      {/* View Destination Modal */}
+      {showViewModal && selectedDestination && (
+        <ViewDestinationModal
+          destination={selectedDestination}
+          onClose={() => {
+            setShowViewModal(false);
+            setSelectedDestination(null);
+          }}
+          onEdit={() => {
+            setShowViewModal(false);
+            handleEditDestination(selectedDestination);
+          }}
+          onDelete={() => {
+            setShowViewModal(false);
+            handleDeleteDestination(selectedDestination.id);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+// View Destination Modal Component
+const ViewDestinationModal = ({ destination, onClose, onEdit, onDelete }) => {
+  if (!destination) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between z-10">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-800">{destination.name}</h2>
+            <p className="text-slate-600 flex items-center mt-1">
+              <MapPin className="h-4 w-4 mr-1" />
+              {destination.country}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            <X className="h-6 w-6 text-slate-600" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Image */}
+          {destination.image && (
+            <div className="relative h-64 rounded-xl overflow-hidden">
+              <img
+                src={destination.image.startsWith('http') ? destination.image : `http://localhost:8000${destination.image}`}
+                alt={destination.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = 'https://via.placeholder.com/800x400?text=No+Image';
+                }}
+              />
+            </div>
+          )}
+
+          {/* Info Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <InfoItem icon={MapPin} label="Category" value={destination.category || 'N/A'} />
+            <InfoItem icon={Star} label="Rating" value={destination.rating || '0.0'} />
+            <InfoItem icon={MessageSquare} label="Reviews" value={destination.review_count || 0} />
+            <InfoItem icon={Cloud} label="Best Season" value={destination.best_season || 'N/A'} />
+            <InfoItem icon={MapPin} label="Latitude" value={destination.latitude || 'N/A'} />
+            <InfoItem icon={MapPin} label="Longitude" value={destination.longitude || 'N/A'} />
+          </div>
+
+          {/* Description */}
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 mb-2">Description</h3>
+            <p className="text-slate-600 leading-relaxed">{destination.description}</p>
+          </div>
+
+          {/* Weather Info */}
+          {destination.general_weather && (
+            <div>
+              <h3 className="text-lg font-bold text-slate-800 mb-2">Weather</h3>
+              <p className="text-slate-600">{destination.general_weather}</p>
+              {destination.weather_area && (
+                <p className="text-sm text-slate-500 mt-1">Area: {destination.weather_area}</p>
+              )}
+            </div>
+          )}
+
+          {/* Transportation */}
+          {destination.travel_options && (
+            <div>
+              <h3 className="text-lg font-bold text-slate-800 mb-2">Travel Options</h3>
+              <p className="text-slate-600">{destination.travel_options}</p>
+            </div>
+          )}
+
+          {/* Activities */}
+          {destination.activities && (
+            <div>
+              <h3 className="text-lg font-bold text-slate-800 mb-2">Activities</h3>
+              <p className="text-slate-600">{destination.activities}</p>
+            </div>
+          )}
+
+          {/* Accommodation */}
+          {destination.accommodation_info && (
+            <div>
+              <h3 className="text-lg font-bold text-slate-800 mb-2">Accommodation</h3>
+              <p className="text-slate-600">{destination.accommodation_info}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 p-6 flex gap-3">
+          <button
+            onClick={onEdit}
+            className="flex-1 btn-primary py-3"
+          >
+            <Edit className="h-4 w-4 mr-2 inline" />
+            Edit Destination
+          </button>
+          <button
+            onClick={onDelete}
+            className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+          >
+            <Trash2 className="h-4 w-4 mr-2 inline" />
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Info Item Component for View Modal
+const InfoItem = ({ icon: Icon, label, value }) => {
+  if (!Icon || !label || value === undefined || value === null) return null;
+  
+  return (
+    <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
+      <div className="p-2 bg-primary-100 rounded-lg">
+        <Icon className="h-5 w-5 text-primary-600" />
+      </div>
+      <div>
+        <p className="text-xs text-slate-500">{label}</p>
+        <p className="text-sm font-semibold text-slate-800">{value}</p>
       </div>
     </div>
   );

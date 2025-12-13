@@ -25,6 +25,12 @@ class Destination(models.Model):
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    
+    # New fields for travel options and weather
+    travel_options = models.JSONField(default=list, help_text="Available travel options: bus, car, bike, plane, etc.")
+    general_weather = models.CharField(max_length=100, blank=True, help_text="General weather description")
+    weather_area = models.CharField(max_length=200, blank=True, help_text="City/area name for weather API")
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

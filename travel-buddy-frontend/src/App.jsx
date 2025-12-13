@@ -5,7 +5,6 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminLogin from './pages/admin/AdminLogin';
-import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
@@ -55,11 +54,7 @@ function App() {
         <Route path="/admin/login" element={<AdminLogin onLogin={handleAdminLogin} />} />
         <Route 
           path="/admin/*" 
-          element={
-            <ProtectedRoute isAuthenticated={!!admin} redirectTo="/admin/login">
-              <AdminDashboard admin={admin} onLogout={handleAdminLogout} />
-            </ProtectedRoute>
-          } 
+          element={<AdminDashboard admin={admin} onLogout={handleAdminLogout} />}
         />
       </Routes>
     </Router>

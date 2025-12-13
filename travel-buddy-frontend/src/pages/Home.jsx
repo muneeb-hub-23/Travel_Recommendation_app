@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import useVoiceInput from '../hooks/useVoiceInput';
 import { motion } from 'framer-motion';
 import { 
   Send, Sparkles, Mountain, Palmtree, Snowflake, Waves, 
   Building2, Star, Plane, Bus, Bike, UtensilsCrossed, 
   Cloud, Sun, CloudRain, Search, TrendingUp, MapPin,
   Calendar, Clock, CheckCircle2, XCircle, AlertCircle,
-  Heart, Eye, Share2, Compass, Zap, ThumbsUp
+  Heart, Eye, Share2, Compass, Zap, ThumbsUp, Mic, MicOff, Languages
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 
@@ -14,6 +15,24 @@ const Home = ({ user, onLogout }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [selectedTravel, setSelectedTravel] = useState(null);
+  const [voiceLanguage, setVoiceLanguage] = useState('en-US');
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const [destinations, setDestinations] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Voice input hook
+  const { isListening, isSupported, toggleListening, changeLanguage } = useVoiceInput(
+    (transcript, isFinal) => {
+      setQuery(transcript);
+    },
+    voiceLanguage
+  );
+
+  const handleLanguageChange = (lang) => {
+    setVoiceLanguage(lang);
+    changeLanguage(lang);
+    setShowLanguageMenu(false);
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -60,11 +79,30 @@ const Home = ({ user, onLogout }) => {
     { id: 4, name: 'Cold', icon: Snowflake, temp: '0-15°C', color: 'from-cyan-400 to-blue-600' },
   ];
 
-  const trendingDestinations = [
-    { id: 1, name: 'Hunza Valley', location: 'Gilgit-Baltistan', image: 'https://images.unsplash.com/photo-1589308078059-be1415eab4c3?w=400', rating: 4.9 },
-    { id: 2, name: 'Murree', location: 'Punjab', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400', rating: 4.7 },
-    { id: 3, name: 'Swat Valley', location: 'Khyber Pakhtunkhwa', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400', rating: 4.8 },
-  ];
+  // Fetch destinations from API on component mount
+  useEffect(() => {
+    const fetchDestinations = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:8000/api/destinations/');
+        if (response.ok) {
+          const data = await response.json();
+          // Handle both paginated and non-paginated responses
+          setDestinations(Array.isArray(data) ? data : (data.results || []));
+        }
+      } catch (error) {
+        console.error('Error fetching destinations:', error);
+        setDestinations([]); // Set empty array on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDestinations();
+  }, []);
+
+  // Get trending destinations (top rated)
+  const trendingDestinations = destinations.slice(0, 3);
 
   // User's trips
   const myTrips = [
@@ -118,81 +156,8 @@ const Home = ({ user, onLogout }) => {
     },
   ];
 
-  // Explore destinations
-  const exploreDestinations = [
-    { 
-      id: 1, 
-      name: 'Fairy Meadows', 
-      location: 'Gilgit-Baltistan',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-      rating: 4.9,
-      reviews: 342,
-      category: 'Alpine',
-      difficulty: 'Challenging',
-      duration: '4-5 days',
-      price: '₨ 35,000'
-    },
-    { 
-      id: 2, 
-      name: 'Skardu', 
-      location: 'Gilgit-Baltistan',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-      rating: 4.8,
-      reviews: 289,
-      category: 'Valley',
-      difficulty: 'Moderate',
-      duration: '5-6 days',
-      price: '₨ 42,000'
-    },
-    { 
-      id: 3, 
-      name: 'Neelum Valley', 
-      location: 'Azad Kashmir',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-      rating: 4.7,
-      reviews: 256,
-      category: 'Valley',
-      difficulty: 'Easy',
-      duration: '3-4 days',
-      price: '₨ 28,000'
-    },
-    { 
-      id: 4, 
-      name: 'Chitral', 
-      location: 'Khyber Pakhtunkhwa',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-      rating: 4.6,
-      reviews: 198,
-      category: 'Mountain',
-      difficulty: 'Moderate',
-      duration: '4-5 days',
-      price: '₨ 38,000'
-    },
-    { 
-      id: 5, 
-      name: 'Kalash Valley', 
-      location: 'Khyber Pakhtunkhwa',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-      rating: 4.7,
-      reviews: 221,
-      category: 'Cultural',
-      difficulty: 'Easy',
-      duration: '3-4 days',
-      price: '₨ 32,000'
-    },
-    { 
-      id: 6, 
-      name: 'Astore Valley', 
-      location: 'Gilgit-Baltistan',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-      rating: 4.5,
-      reviews: 167,
-      category: 'Valley',
-      difficulty: 'Moderate',
-      duration: '4-5 days',
-      price: '₨ 36,000'
-    },
-  ];
+  // Explore destinations - all available destinations
+  const exploreDestinations = destinations;
 
   // Personalized recommendations based on previous trips
   const personalizedRecommendations = [
@@ -276,6 +241,68 @@ const Home = ({ user, onLogout }) => {
                   placeholder="Plan a 3-day trip to northern Pakistan under 25,000 PKR..."
                   className="flex-1 px-4 py-4 text-lg outline-none bg-transparent"
                 />
+                
+                {/* Voice Input Buttons */}
+                {isSupported && (
+                  <div className="flex items-center gap-2 mr-2">
+                    {/* Language Selector */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+                        className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                        title="Select Language"
+                      >
+                        <Languages className="h-5 w-5 text-slate-500" />
+                      </button>
+                      
+                      {/* Language Dropdown */}
+                      {showLanguageMenu && (
+                        <div className="absolute right-0 bottom-full mb-2 bg-white rounded-lg shadow-lg border border-slate-200 py-2 w-40 z-10">
+                          <button
+                            type="button"
+                            onClick={() => handleLanguageChange('en-US')}
+                            className={`w-full px-4 py-2 text-left hover:bg-slate-50 flex items-center justify-between ${
+                              voiceLanguage === 'en-US' ? 'bg-primary-50 text-primary-600' : 'text-slate-700'
+                            }`}
+                          >
+                            <span>English</span>
+                            {voiceLanguage === 'en-US' && <span className="text-xs">✓</span>}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleLanguageChange('ur-PK')}
+                            className={`w-full px-4 py-2 text-left hover:bg-slate-50 flex items-center justify-between ${
+                              voiceLanguage === 'ur-PK' ? 'bg-primary-50 text-primary-600' : 'text-slate-700'
+                            }`}
+                          >
+                            <span>اردو (Urdu)</span>
+                            {voiceLanguage === 'ur-PK' && <span className="text-xs">✓</span>}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Microphone Button */}
+                    <button
+                      type="button"
+                      onClick={toggleListening}
+                      className={`p-3 rounded-lg transition-all duration-300 ${
+                        isListening
+                          ? 'bg-red-500 text-white animate-pulse'
+                          : 'bg-gradient-to-r from-primary-600 to-accent-600 text-white hover:shadow-lg'
+                      }`}
+                      title={isListening ? 'Stop Recording' : 'Start Voice Input'}
+                    >
+                      {isListening ? (
+                        <MicOff className="h-5 w-5" />
+                      ) : (
+                        <Mic className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                )}
+                
                 <button
                   type="submit"
                   className="bg-gradient-to-r from-primary-600 to-accent-600 text-white px-8 py-4 rounded-xl font-medium hover:shadow-lg transition-all duration-300 flex items-center space-x-2"
@@ -330,11 +357,24 @@ const Home = ({ user, onLogout }) => {
         {/* Explore Destinations - Only for logged-in users */}
         {user && (
           <Section title="Explore New Destinations" icon={Compass}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {exploreDestinations.map((dest, index) => (
-                <ExploreCard key={dest.id} destination={dest} delay={index * 0.1} />
-              ))}
-            </div>
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin h-12 w-12 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p className="text-slate-600">Loading destinations...</p>
+              </div>
+            ) : destinations.length === 0 ? (
+              <div className="text-center py-12">
+                <Compass className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-600 mb-2">No destinations to explore yet</p>
+                <p className="text-sm text-slate-500">Admin can add destinations from the dashboard</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {exploreDestinations.map((dest, index) => (
+                  <ExploreCard key={dest.id} destination={dest} delay={index * 0.1} />
+                ))}
+              </div>
+            )}
           </Section>
         )}
 
@@ -355,11 +395,24 @@ const Home = ({ user, onLogout }) => {
 
         {/* Trending Destinations */}
         <Section title="Trending Destinations" icon={TrendingUp}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {trendingDestinations.map((dest, index) => (
-              <TrendingCard key={dest.id} destination={dest} delay={index * 0.1} />
-            ))}
-          </div>
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin h-12 w-12 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-slate-600">Loading destinations...</p>
+            </div>
+          ) : destinations.length === 0 ? (
+            <div className="text-center py-12">
+              <MapPin className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+              <p className="text-slate-600 mb-2">No destinations available yet</p>
+              <p className="text-sm text-slate-500">Add destinations from the admin dashboard to see them here</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {trendingDestinations.map((dest, index) => (
+                <TrendingCard key={dest.id} destination={dest} delay={index * 0.1} />
+              ))}
+            </div>
+          )}
         </Section>
 
         {/* Hotel Categories */}
@@ -475,15 +528,25 @@ const TrendingCard = ({ destination, delay }) => (
     className="card overflow-hidden cursor-pointer"
   >
     <div className="relative h-48 overflow-hidden">
-      <img src={destination.image} alt={destination.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" />
+      {destination.image ? (
+        <img 
+          src={destination.image.startsWith('http') ? destination.image : `http://localhost:8000${destination.image}`} 
+          alt={destination.name} 
+          className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" 
+        />
+      ) : (
+        <div className="w-full h-full bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center">
+          <MapPin className="h-16 w-16 text-white opacity-50" />
+        </div>
+      )}
       <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center space-x-1">
         <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-        <span className="text-sm font-semibold">{destination.rating}</span>
+        <span className="text-sm font-semibold">{destination.rating || destination.average_rating || '0.0'}</span>
       </div>
     </div>
     <div className="p-4">
       <h3 className="font-bold text-lg text-slate-800">{destination.name}</h3>
-      <p className="text-slate-600 text-sm">{destination.location}</p>
+      <p className="text-slate-600 text-sm">{destination.country || destination.location}</p>
     </div>
   </motion.div>
 );
@@ -686,7 +749,17 @@ const ExploreCard = ({ destination, delay }) => (
     className="card overflow-hidden cursor-pointer group"
   >
     <div className="relative h-48 overflow-hidden">
-      <img src={destination.image} alt={destination.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+      {destination.image ? (
+        <img 
+          src={destination.image.startsWith('http') ? destination.image : `http://localhost:8000${destination.image}`} 
+          alt={destination.name} 
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" 
+        />
+      ) : (
+        <div className="w-full h-full bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center">
+          <MapPin className="h-16 w-16 text-white opacity-50" />
+        </div>
+      )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
       
       {/* Action buttons */}
@@ -702,8 +775,8 @@ const ExploreCard = ({ destination, delay }) => (
       {/* Rating */}
       <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center space-x-1">
         <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-        <span className="text-sm font-semibold">{destination.rating}</span>
-        <span className="text-xs text-slate-600">({destination.reviews})</span>
+        <span className="text-sm font-semibold">{destination.rating || destination.average_rating || '0.0'}</span>
+        <span className="text-xs text-slate-600">({destination.review_count || destination.reviews || 0})</span>
       </div>
     </div>
     
@@ -713,27 +786,20 @@ const ExploreCard = ({ destination, delay }) => (
           <h3 className="font-bold text-lg text-slate-800 mb-1">{destination.name}</h3>
           <p className="text-slate-600 text-sm flex items-center">
             <MapPin className="h-3 w-3 mr-1" />
-            {destination.location}
+            {destination.country || destination.location}
           </p>
         </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="flex items-center text-xs text-slate-600">
-          <Clock className="h-3 w-3 mr-1" />
-          {destination.duration}
-        </div>
-        <div className="flex items-center text-xs text-slate-600">
-          <AlertCircle className="h-3 w-3 mr-1" />
-          {destination.difficulty}
-        </div>
-      </div>
+      {destination.description && (
+        <p className="text-sm text-slate-600 mb-3 line-clamp-2">{destination.description}</p>
+      )}
       
       <div className="flex items-center justify-between pt-3 border-t border-slate-200">
         <span className="text-xs px-2 py-1 bg-gradient-to-r from-primary-100 to-accent-100 text-primary-700 rounded-full font-medium">
           {destination.category}
         </span>
-        <span className="text-sm font-semibold text-primary-600">{destination.price}</span>
+        <span className="text-xs text-slate-600">{destination.best_season || 'All year'}</span>
       </div>
       
       <button className="w-full mt-3 btn-primary text-sm py-2 flex items-center justify-center space-x-2">
