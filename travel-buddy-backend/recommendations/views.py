@@ -147,24 +147,53 @@ class DestinationViewSet(viewsets.ModelViewSet):
         
         # Add hotel information and filter destinations
         room_type = nlp_result.get('room_type', 'couple')
-        budget = nlp_result.get('budget')
+        budget_min = nlp_result.get('budget_min')
+        budget_max = nlp_result.get('budget_max')
         days = nlp_result.get('days') or 1
+        location = nlp_result.get('location')
+        
+        # For single-day trips (picnics, day trips), waive accommodation requirement
+        require_accommodation = days > 1
+        
+        # Filter by location if specified
+        destinations_to_process = search_results['destinations']
+        if location:
+            destinations_to_process = [
+                dest for dest in destinations_to_process
+                if (location.lower() in dest.name.lower() or 
+                    location.lower() in dest.country.lower() or
+                    (dest.description and location.lower() in dest.description.lower()))
+            ]
         
         # Process destinations and build results with hotels
         filtered_destinations = []
         results_data = []
         
-        for dest in search_results['destinations']:
-            # Get the best hotel for this destination
+        for dest in destinations_to_process:
+            # For single-day trips, skip hotel requirement
+            if not require_accommodation:
+                filtered_destinations.append(dest)
+                dest_data = self.get_serializer(dest).data
+                dest_data['is_day_trip'] = True  # Mark as day trip
+                results_data.append(dest_data)
+                continue
+            
+            # For multi-day trips, check for hotels
             hotels = Hotel.objects.filter(destination=dest).order_by('-rating')
             
             # Filter by budget if specified
-            if budget and room_type:
+            if (budget_min or budget_max) and room_type:
                 price_field = f'price_{room_type}'
-                # Calculate max price per night based on total budget and days
-                max_price_per_night = budget / days
-                # Filter hotels where price_per_night * days <= budget
-                hotels = hotels.filter(**{f'{price_field}__lte': max_price_per_night})
+                
+                # Filter by maximum budget
+                if budget_max:
+                    max_price_per_night = budget_max / days
+                    hotels = hotels.filter(**{f'{price_field}__lte': max_price_per_night})
+                
+                # Filter by minimum budget
+                if budget_min:
+                    min_price_per_night = budget_min / days
+                    hotels = hotels.filter(**{f'{price_field}__gte': min_price_per_night})
             
             # Only include destination if it has at least one hotel meeting criteria
             if hotels.exists():
@@ -172,8 +201,14 @@ class DestinationViewSet(viewsets.ModelViewSet):
                 price_per_night = getattr(best_hotel, f'price_{room_type}', best_hotel.price_couple)
                 total_price = float(price_per_night * days)
                 
-                # Only add if total price is within budget
-                if not budget or total_price <= budget:
+                # Check if total price is within budget range
+                in_budget = True
+                if budget_max and total_price > budget_max:
+                    in_budget = False
+                if budget_min and total_price < budget_min:
+                    in_budget = False
+                
+                if in_budget:
                     filtered_destinations.append(dest)
                     
                     # Serialize this destination
@@ -188,7 +223,7 @@ class DestinationViewSet(viewsets.ModelViewSet):
                         'amenities': best_hotel.amenities[:4] if best_hotel.amenities else []
                     }
                     results_data.append(dest_data)
-            elif not budget:
+            elif not (budget_min or budget_max):
                 # If no budget specified, include all destinations (even without hotels)
                 filtered_destinations.append(dest)
                 dest_data = self.get_serializer(dest).data
@@ -205,8 +240,11 @@ class DestinationViewSet(viewsets.ModelViewSet):
             'summary': summary,
             'keywords': search_results['keywords'],
             'room_type': nlp_result.get('room_type'),
-            'budget': nlp_result.get('budget'),
+            'budget_min': nlp_result.get('budget_min'),
+            'budget_max': nlp_result.get('budget_max'),
             'days': nlp_result.get('days'),
+            'location': nlp_result.get('location'),
+            'is_day_trip': not require_accommodation,
             'count': len(results_data),
             'results': results_data
         })

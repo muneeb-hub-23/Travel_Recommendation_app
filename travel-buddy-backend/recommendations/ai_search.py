@@ -155,8 +155,10 @@ class SmartSearch:
             'is_trending': nlp_result['is_trending'],
             'extracted_keywords': nlp_result['keywords'],
             'room_type': nlp_result.get('room_type'),
-            'budget': nlp_result.get('budget'),
-            'days': nlp_result.get('days')
+            'budget_min': nlp_result.get('budget_min'),
+            'budget_max': nlp_result.get('budget_max'),
+            'days': nlp_result.get('days'),
+            'location': nlp_result.get('location')
         }
         
         return {

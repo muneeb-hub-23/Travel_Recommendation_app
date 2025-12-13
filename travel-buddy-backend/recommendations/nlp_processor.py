@@ -29,7 +29,7 @@ class NLPProcessor:
         'do', 'does', 'did', 'will', 'would', 'should', 'could', 'may', 'might',
         'area', 'areas', 'place', 'places', 'destination', 'destinations', 'spot', 'spots',
         'location', 'locations', 'site', 'sites', 'plan', 'trip', 'with', 'hotel', 'price',
-        'under', 'budget', 'accommodation'
+        'under', 'budget', 'accommodation', 'between', 'from'
     }
     
     # Room type mappings
@@ -51,6 +51,35 @@ class NLPProcessor:
     NUMBER_WORDS = {
         'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
         'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
+    }
+    
+    # Common Pakistani cities and areas
+    LOCATIONS = [
+        'islamabad', 'karachi', 'lahore', 'peshawar', 'quetta', 'multan', 'faisalabad',
+        'rawalpindi', 'gujranwala', 'sialkot', 'murree', 'naran', 'kaghan', 'hunza',
+        'skardu', 'gilgit', 'swat', 'chitral', 'abbottabad', 'mansehra', 'muzaffarabad',
+        'kashmir', 'azad kashmir', 'northern areas', 'punjab', 'sindh', 'kpk', 
+        'khyber pakhtunkhwa', 'balochistan', 'gilgit-baltistan'
+    ]
+    
+    # Location abbreviations mapping
+    LOCATION_ABBREVIATIONS = {
+        'isb': 'islamabad',
+        'khi': 'karachi',
+        'lhr': 'lahore',
+        'lhe': 'lahore',
+        'pesh': 'peshawar',
+        'rwp': 'rawalpindi',
+        'pindi': 'rawalpindi',
+        'mul': 'multan',
+        'fsd': 'faisalabad',
+        'skd': 'skardu',
+        'gil': 'gilgit',
+        'abbt': 'abbottabad',
+        'abbota': 'abbottabad',
+        'muz': 'muzaffarabad',
+        'azk': 'azad kashmir',
+        'ak': 'azad kashmir'
     }
     
     # Destination type synonyms
@@ -215,12 +244,26 @@ class NLPProcessor:
             if room_type:
                 break
         
-        # Extract budget/price
-        budget = None
+        # Extract budget/price (supports ranges and single values)
+        budget_min = None
+        budget_max = None
         import re
-        price_match = re.search(r'(?:under|below|less than|max|maximum)\s*(\d+)', query_lower)
-        if price_match:
-            budget = int(price_match.group(1))
+        
+        # Check for budget range: "between X to/and Y", "in budget X to Y", "budget between X to Y"
+        range_match = re.search(r'(?:between|from|budget(?:\s+between)?|in\s+budget(?:\s+between)?)\s*(\d+)\s*(?:to|and|-)\s*(\d+)', query_lower)
+        if range_match:
+            budget_min = int(range_match.group(1))
+            budget_max = int(range_match.group(2))
+        else:
+            # Check for maximum budget: "under X", "below X", "less than X"
+            max_match = re.search(r'(?:under|below|less than|max|maximum)\s*(\d+)', query_lower)
+            if max_match:
+                budget_max = int(max_match.group(1))
+            
+            # Check for minimum budget: "above X", "more than X", "minimum X"
+            min_match = re.search(r'(?:above|more than|minimum|min)\s*(\d+)', query_lower)
+            if min_match:
+                budget_min = int(min_match.group(1))
         
         # Extract number of days
         days = None
@@ -234,6 +277,26 @@ class NLPProcessor:
                 except:
                     pass
         
+        # Extract location/city
+        location = None
+        
+        # First check for abbreviations
+        query_words = query_lower.split()
+        for word in query_words:
+            # Remove common prefixes/suffixes
+            clean_word = word.strip('.,!?;:')
+            if clean_word in NLPProcessor.LOCATION_ABBREVIATIONS:
+                location = NLPProcessor.LOCATION_ABBREVIATIONS[clean_word]
+                break
+        
+        # If no abbreviation found, check for full location names
+        if not location:
+            for loc in NLPProcessor.LOCATIONS:
+                # Check for exact match or with "area" suffix
+                if loc in query_lower or f'{loc} area' in query_lower:
+                    location = loc
+                    break
+        
         return {
             'keywords': keywords,
             'destination_types': destination_types,
@@ -241,6 +304,8 @@ class NLPProcessor:
             'seasons': seasons,
             'is_trending': is_trending,
             'room_type': room_type,
-            'budget': budget,
-            'days': days
+            'budget_min': budget_min,
+            'budget_max': budget_max,
+            'days': days,
+            'location': location
         }

@@ -90,8 +90,12 @@ const Home = ({ user, onLogout }) => {
         if (data.room_type) {
           summary += ` • ${data.room_type.charAt(0).toUpperCase() + data.room_type.slice(1)} room`;
         }
-        if (data.budget) {
-          summary += ` • Under PKR ${data.budget.toLocaleString()}`;
+        if (data.budget_min && data.budget_max) {
+          summary += ` • PKR ${data.budget_min.toLocaleString()} - ${data.budget_max.toLocaleString()}`;
+        } else if (data.budget_max) {
+          summary += ` • Under PKR ${data.budget_max.toLocaleString()}`;
+        } else if (data.budget_min) {
+          summary += ` • Above PKR ${data.budget_min.toLocaleString()}`;
         }
         if (data.days && data.days > 1) {
           summary += ` • ${data.days} days`;
@@ -785,8 +789,8 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => (
         {destination.country || destination.location}
       </p>
       
-      {/* Hotel Information */}
-      {destination.hotel && (
+      {/* Hotel Information - Only show for multi-day trips */}
+      {destination.hotel && !destination.is_day_trip && (
         <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 rounded-lg mb-3 border border-purple-200">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-purple-900">🏨 {destination.hotel.name}</span>
@@ -833,7 +837,10 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => (
         <div className="flex items-center space-x-2 mb-2 text-xs">
           <div className="flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
             <Cloud className="h-3 w-3 mr-1" />
-            <span className="font-medium">Now: {destination.current_weather.description}</span>
+            <span className="font-medium">
+              Now: {destination.current_weather.description}
+              {destination.current_weather.temperature && ` • ${Math.round(destination.current_weather.temperature)}°C`}
+            </span>
           </div>
         </div>
       )}
