@@ -805,7 +805,7 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => (
             </div>
             <div className="flex items-center justify-between text-xs">
               <span className="text-purple-700">Per Night:</span>
-              <span className="font-semibold text-purple-900">PKR {destination.hotel.price_per_night.toLocaleString()}</span>
+              <span className="font-semibold text-purple-900">PKR {Number(destination.hotel.price_per_night || 0).toLocaleString()}</span>
             </div>
             {destination.hotel.days > 1 && (
               <>
@@ -815,7 +815,7 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => (
                 </div>
                 <div className="flex items-center justify-between text-xs pt-1 border-t border-purple-200">
                   <span className="text-purple-700 font-bold">Total Price:</span>
-                  <span className="font-bold text-lg text-purple-900">PKR {destination.hotel.total_price.toLocaleString()}</span>
+                  <span className="font-bold text-lg text-purple-900">PKR {Number(destination.hotel.total_price || 0).toLocaleString()}</span>
                 </div>
               </>
             )}

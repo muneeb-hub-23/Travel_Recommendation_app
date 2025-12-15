@@ -85,6 +85,13 @@ class SmartSearch:
         """
         # Use advanced NLP processing
         nlp_result = NLPProcessor.process_query(query)
+
+        # If user is asking about hotels/rooms/stays, the token "hot" is often a shorthand/typo for "hotel".
+        # In that case, don't treat "hot" as a weather constraint because it can eliminate all results.
+        query_lower = (query or '').lower()
+        lodging_intent = any(t in query_lower for t in ['hotel', 'hotels', 'room', 'rooms', 'stay', 'staying', 'overnight', 'accommodation'])
+        if lodging_intent and nlp_result.get('weather'):
+            nlp_result['weather'] = [w for w in nlp_result['weather'] if w != 'hot']
         
         # Start with all destinations
         queryset = Destination.objects.all()
@@ -131,8 +138,28 @@ class SmartSearch:
         # If no specific filters but has keywords, search in name and description
         if not (nlp_result['destination_types'] or nlp_result['weather'] or nlp_result['seasons']):
             if nlp_result['keywords']:
+                # Many queries are about hotels/rooms/amenities (e.g., "night stay with club").
+                # Those terms usually don't exist in destination name/description, so filtering by them
+                # can incorrectly return zero destinations. Exclude such non-destination keywords.
+                non_destination_keywords = {
+                    # lodging intent
+                    'hotel', 'hotels', 'room', 'rooms', 'stay', 'staying', 'overnight', 'accommodation',
+                    # common trip planning terms
+                    'trip', 'plan', 'travel', 'tour',
+                    # room types / party size
+                    'single', 'solo', 'couple', 'double', 'family', 'executive', 'person', 'people',
+                    # amenity/tag terms (should be handled by hotel filtering, not destination text)
+                    'club', 'nightclub', 'bar', 'pool', 'spa', 'gym', 'wifi', 'restaurant',
+                    'breakfast', 'parking'
+                }
+
+                destination_keywords = [
+                    k for k in nlp_result['keywords']
+                    if k and (k not in non_destination_keywords)
+                ]
+
                 name_desc_query = Q()
-                for keyword in nlp_result['keywords']:
+                for keyword in destination_keywords:
                     if len(keyword) > 2:  # Skip very short words
                         name_desc_query |= Q(name__icontains=keyword) | Q(description__icontains=keyword)
                 if name_desc_query:

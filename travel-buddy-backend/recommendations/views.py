@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.db.models import Q, Avg
 import requests
+import re
 from django.conf import settings
 from .models import Destination, UserPreference, Review, Hotel
 from .serializers import (
@@ -152,8 +153,43 @@ class DestinationViewSet(viewsets.ModelViewSet):
         days = nlp_result.get('days') or 1
         location = nlp_result.get('location')
         
+        # Decide whether this query implies accommodation.
+        # If user asks for an overnight / night stay, we should include hotel info even for 1 day.
+        query_lower = (query or '').lower()
+        lodging_intent = any(term in query_lower for term in [
+            'night stay',
+            'overnight',
+            'stay',
+            'staying',
+            'hotel',
+            'room',
+            'accommodation'
+        ])
+
+        # Common shorthand/typo: users type "hot" instead of "hotel".
+        # Only treat it as lodging intent when the query also contains other lodging/amenity signals.
+        if (not lodging_intent) and re.search(r'\bhot\b', query_lower):
+            if any(t in query_lower for t in ['club', 'nightclub', 'bar', 'room', 'stay', 'staying', 'overnight', 'accommodation']):
+                lodging_intent = True
+
+        # Detect hotel amenity/tag terms from the query (stored in Hotel.amenities).
+        # Keep this intentionally small + practical; expand as your dashboard supports more tags.
+        amenity_vocabulary = [
+            'club',
+            'nightclub',
+            'bar',
+            'pool',
+            'spa',
+            'gym',
+            'wifi',
+            'restaurant',
+            'breakfast',
+            'parking'
+        ]
+        requested_amenities = [term for term in amenity_vocabulary if term in query_lower]
+
         # For single-day trips (picnics, day trips), waive accommodation requirement
-        require_accommodation = days > 1
+        require_accommodation = (days > 1) or lodging_intent
         
         # Filter by location if specified
         destinations_to_process = search_results['destinations']
@@ -180,6 +216,30 @@ class DestinationViewSet(viewsets.ModelViewSet):
             
             # For multi-day trips, check for hotels
             hotels = Hotel.objects.filter(destination=dest).order_by('-rating')
+
+            # Filter by requested amenities/tags if present
+            # Use both JSON array contains and text icontains for compatibility across DB backends.
+            for amenity in requested_amenities:
+                amenity_variants = {
+                    amenity,
+                    amenity.lower(),
+                    amenity.upper(),
+                    amenity.title(),
+                    amenity.replace('_', ' '),
+                    amenity.replace(' ', '_'),
+                }
+                # Special-case common "night club" spelling variants
+                if amenity == 'nightclub':
+                    amenity_variants.update({'night club', 'Night Club', 'night_club', 'Night_Club'})
+
+                hotels = hotels.filter(
+                    Q(amenities__icontains=amenity) |
+                    Q(amenities__icontains=amenity.replace('_', ' ')) |
+                    Q(amenities__icontains=amenity.replace(' ', '_')) |
+                    Q(amenities__contains=[amenity]) |
+                    Q(amenities__contains=[amenity.lower()]) |
+                    Q(amenities__contains=[amenity.title()])
+                )
             
             # Filter by budget if specified
             if (budget_min or budget_max) and room_type:
@@ -223,8 +283,8 @@ class DestinationViewSet(viewsets.ModelViewSet):
                         'amenities': best_hotel.amenities[:4] if best_hotel.amenities else []
                     }
                     results_data.append(dest_data)
-            elif not (budget_min or budget_max):
-                # If no budget specified, include all destinations (even without hotels)
+            elif not (budget_min or budget_max) and not requested_amenities:
+                # If no budget/amenity specified, include all destinations (even without hotels)
                 filtered_destinations.append(dest)
                 dest_data = self.get_serializer(dest).data
                 results_data.append(dest_data)
