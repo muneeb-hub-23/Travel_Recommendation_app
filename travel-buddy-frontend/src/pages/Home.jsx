@@ -310,8 +310,7 @@ const Home = ({ user, onLogout }) => {
           className="text-center mb-12"
         >
           <div className="flex items-center justify-center mb-4">
-            <Sparkles className="h-8 w-8 text-primary-600 mr-2" />
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary-600 via-accent-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
               Your AI Travel Companion
             </h1>
           </div>
@@ -320,130 +319,29 @@ const Home = ({ user, onLogout }) => {
           </p>
 
           {/* AI Prompt Bar */}
-          <form onSubmit={handleSearch} className="max-w-4xl mx-auto">
-            <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-primary-600 via-accent-600 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
-              <div className="relative flex items-center bg-white rounded-2xl shadow-xl p-2">
-                <Search className="h-6 w-6 text-slate-400 ml-4" />
+          <form onSubmit={handleSearch} className="max-w-5xl mx-auto">
+            <div className="relative">
+              <div className="flex items-center bg-white rounded-xl shadow-md border border-slate-200 p-2">
+                <Search className="h-5 w-5 text-slate-400 ml-3" />
                 <input
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Plan a 3-day trip to northern Pakistan under 25,000 PKR..."
-                  className="flex-1 px-4 py-4 text-lg outline-none bg-transparent"
+                  className="flex-1 px-4 py-3 text-base font-normal outline-none bg-transparent"
                 />
-                
-                {/* Voice Input Buttons */}
-                {isSupported && (
-                  <div className="flex items-center gap-2 mr-2">
-                    {/* Language Selector */}
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setShowLanguageMenu(!showLanguageMenu)}
-                        className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
-                        title="Select Language"
-                      >
-                        <Languages className="h-5 w-5 text-slate-500" />
-                      </button>
-                      
-                      {/* Language Dropdown */}
-                      {showLanguageMenu && (
-                        <div className="absolute right-0 bottom-full mb-2 bg-white rounded-lg shadow-lg border border-slate-200 py-2 w-40 z-10">
-                          <button
-                            type="button"
-                            onClick={() => handleLanguageChange('en-US')}
-                            className={`w-full px-4 py-2 text-left hover:bg-slate-50 flex items-center justify-between ${
-                              voiceLanguage === 'en-US' ? 'bg-primary-50 text-primary-600' : 'text-slate-700'
-                            }`}
-                          >
-                            <span>English</span>
-                            {voiceLanguage === 'en-US' && <span className="text-xs">✓</span>}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleLanguageChange('ur-PK')}
-                            className={`w-full px-4 py-2 text-left hover:bg-slate-50 flex items-center justify-between ${
-                              voiceLanguage === 'ur-PK' ? 'bg-primary-50 text-primary-600' : 'text-slate-700'
-                            }`}
-                          >
-                            <span>اردو (Urdu)</span>
-                            {voiceLanguage === 'ur-PK' && <span className="text-xs">✓</span>}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Microphone Button */}
-                    <button
-                      type="button"
-                      onClick={toggleListening}
-                      className={`p-3 rounded-lg transition-all duration-300 ${
-                        isListening
-                          ? 'bg-red-500 text-white animate-pulse'
-                          : 'bg-gradient-to-r from-primary-600 to-accent-600 text-white hover:shadow-lg'
-                      }`}
-                      title={isListening ? 'Stop Recording' : 'Start Voice Input'}
-                    >
-                      {isListening ? (
-                        <MicOff className="h-5 w-5" />
-                      ) : (
-                        <Mic className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
-                )}
                 
                 <button
                   type="submit"
-                  className="bg-gradient-to-r from-primary-600 to-accent-600 text-white px-8 py-4 rounded-xl font-medium hover:shadow-lg transition-all duration-300 flex items-center space-x-2"
+                  className="bg-slate-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-slate-800 transition-colors flex items-center space-x-2"
                 >
                   <span>Plan Trip</span>
-                  <Send className="h-5 w-5" />
+                  <Send className="h-4 w-4" />
                 </button>
               </div>
             </div>
           </form>
 
-          {/* AI Suggestions */}
-          <div className="flex flex-wrap gap-3 justify-center mt-8">
-            <button 
-              onClick={() => {
-                setQuery('trending mountain places');
-                handleSearch({ preventDefault: () => {} });
-              }}
-              className="px-4 py-2 bg-white rounded-full text-sm text-slate-600 hover:text-primary-600 hover:shadow-md transition-all duration-300 border border-slate-200"
-            >
-              🏔️ Trending mountains
-            </button>
-            <button 
-              onClick={() => {
-                setQuery('cultural tourist places');
-                handleSearch({ preventDefault: () => {} });
-              }}
-              className="px-4 py-2 bg-white rounded-full text-sm text-slate-600 hover:text-primary-600 hover:shadow-md transition-all duration-300 border border-slate-200"
-            >
-              🎭 Cultural places
-            </button>
-            <button 
-              onClick={() => {
-                setQuery('snowfall tourist places');
-                handleSearch({ preventDefault: () => {} });
-              }}
-              className="px-4 py-2 bg-white rounded-full text-sm text-slate-600 hover:text-primary-600 hover:shadow-md transition-all duration-300 border border-slate-200"
-            >
-              ❄️ Snowy destinations
-            </button>
-            <button 
-              onClick={() => {
-                setQuery('beach destinations');
-                handleSearch({ preventDefault: () => {} });
-              }}
-              className="px-4 py-2 bg-white rounded-full text-sm text-slate-600 hover:text-primary-600 hover:shadow-md transition-all duration-300 border border-slate-200"
-            >
-              🏖️ Beaches
-            </button>
-          </div>
         </motion.div>
 
         {/* AI Search Loader - Shows immediately when searching starts */}
@@ -453,19 +351,19 @@ const Home = ({ user, onLogout }) => {
             animate={{ opacity: 1, y: 0 }}
             className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
           >
-            <div className="bg-gradient-to-r from-primary-50 to-accent-50 rounded-2xl p-8">
+            <div className="bg-slate-50 rounded-xl p-8 border border-slate-200">
               <div className="text-center py-8">
-                {/* Gemini-style animated loader */}
+                {/* Animated loader */}
                 <div className="flex justify-center items-center space-x-2 mb-6">
-                  <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-accent-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                  <div className="w-3 h-3 bg-gradient-to-r from-accent-500 to-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  <div className="w-3 h-3 bg-gradient-to-r from-pink-500 to-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+                  <div className="w-3 h-3 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                  <div className="w-3 h-3 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-3 h-3 bg-slate-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-3 h-3 bg-slate-700 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
                 </div>
                 
-                {/* Animated gradient text */}
+                {/* Animated text */}
                 <div className="mb-4">
-                  <p className="text-xl font-semibold bg-gradient-to-r from-primary-600 via-accent-600 to-purple-600 bg-clip-text text-transparent animate-pulse">
+                  <p className="text-xl font-semibold text-slate-900 animate-pulse">
                     AI is searching destinations...
                   </p>
                 </div>
@@ -498,7 +396,7 @@ const Home = ({ user, onLogout }) => {
             animate={{ opacity: 1, y: 0 }}
             className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
           >
-            <div className="bg-gradient-to-r from-primary-50 to-accent-50 rounded-2xl p-6 mb-6">
+            <div className="bg-slate-50 p-6 mb-6 border border-slate-200">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center space-x-3">
                   <div className="p-3 bg-white rounded-xl shadow-sm">
@@ -523,7 +421,7 @@ const Home = ({ user, onLogout }) => {
             </div>
 
             {searchResults.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-2xl shadow-sm">
+              <div className="text-center py-12 bg-white shadow-sm border border-slate-200">
                 <AlertCircle className="h-16 w-16 text-slate-300 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-slate-800 mb-2">No results found</h3>
                 <p className="text-slate-600 mb-4">Try different keywords or check spelling</p>
@@ -758,7 +656,7 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => (
     viewport={{ once: true }}
     transition={{ delay }}
     whileHover={{ y: -8 }}
-    className="card overflow-hidden cursor-pointer"
+    className="bg-white border border-slate-200 overflow-hidden cursor-pointer"
   >
     <div className="relative h-48 overflow-hidden">
       {destination.image ? (
@@ -768,16 +666,16 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => (
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" 
         />
       ) : (
-        <div className="w-full h-full bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center">
-          <MapPin className="h-16 w-16 text-white opacity-50" />
+        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+          <MapPin className="h-16 w-16 text-gray-400 opacity-50" />
         </div>
       )}
-      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center space-x-1">
-        <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-        <span className="text-sm font-semibold">{destination.rating || destination.average_rating || '0.0'}</span>
+      <div className="absolute top-3 right-3 bg-white px-3 py-1 flex items-center space-x-1">
+        <Star className="h-4 w-4 text-black fill-black" />
+        <span className="text-sm font-semibold text-black">{destination.rating || destination.average_rating || '0.0'}</span>
       </div>
       {destination.category && (
-        <div className="absolute top-3 left-3 bg-primary-500/90 backdrop-blur-sm px-3 py-1 rounded-full">
+        <div className="absolute top-3 left-3 bg-black px-3 py-1">
           <span className="text-xs font-medium text-white capitalize">{destination.category}</span>
         </div>
       )}
@@ -791,31 +689,31 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => (
       
       {/* Hotel Information - Only show for multi-day trips */}
       {destination.hotel && !destination.is_day_trip && (
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 rounded-lg mb-3 border border-purple-200">
+        <div className="bg-gray-100 p-3 mb-3 border border-gray-300">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-purple-900">🏨 {destination.hotel.name}</span>
-            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
+            <span className="text-xs font-bold text-black">🏨 {destination.hotel.name}</span>
+            <span className="text-xs bg-white text-black border border-gray-300 px-2 py-0.5">
               ⭐ {destination.hotel.rating}
             </span>
           </div>
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-purple-700">Room Type:</span>
-              <span className="font-semibold text-purple-900 capitalize">{destination.hotel.room_type}</span>
+              <span className="text-gray-700">Room Type:</span>
+              <span className="font-semibold text-black capitalize">{destination.hotel.room_type}</span>
             </div>
             <div className="flex items-center justify-between text-xs">
-              <span className="text-purple-700">Per Night:</span>
-              <span className="font-semibold text-purple-900">PKR {Number(destination.hotel.price_per_night || 0).toLocaleString()}</span>
+              <span className="text-gray-700">Per Night:</span>
+              <span className="font-semibold text-black">PKR {Number(destination.hotel.price_per_night || 0).toLocaleString()}</span>
             </div>
             {destination.hotel.days > 1 && (
               <>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-purple-700">Duration:</span>
-                  <span className="font-semibold text-purple-900">{destination.hotel.days} days</span>
+                  <span className="text-gray-700">Duration:</span>
+                  <span className="font-semibold text-black">{destination.hotel.days} days</span>
                 </div>
-                <div className="flex items-center justify-between text-xs pt-1 border-t border-purple-200">
-                  <span className="text-purple-700 font-bold">Total Price:</span>
-                  <span className="font-bold text-lg text-purple-900">PKR {Number(destination.hotel.total_price || 0).toLocaleString()}</span>
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-300">
+                  <span className="text-gray-700 font-bold">Total Price:</span>
+                  <span className="font-bold text-lg text-black">PKR {Number(destination.hotel.total_price || 0).toLocaleString()}</span>
                 </div>
               </>
             )}
@@ -823,7 +721,7 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => (
           {destination.hotel.amenities && destination.hotel.amenities.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
               {destination.hotel.amenities.map((amenity, idx) => (
-                <span key={idx} className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
+                <span key={idx} className="text-xs bg-white text-black border border-gray-300 px-2 py-0.5">
                   {amenity}
                 </span>
               ))}
@@ -835,7 +733,7 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => (
       {/* Current Weather (Live) */}
       {destination.current_weather && (
         <div className="flex items-center space-x-2 mb-2 text-xs">
-          <div className="flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+          <div className="flex items-center bg-gray-100 text-black border border-gray-300 px-2 py-1">
             <Cloud className="h-3 w-3 mr-1" />
             <span className="font-medium">
               Now: {destination.current_weather.description}
@@ -848,7 +746,7 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => (
       {/* Weather Loading Indicator */}
       {!destination.current_weather && weatherLoading[destination.id] && (
         <div className="flex items-center space-x-2 mb-2 text-xs">
-          <div className="flex items-center bg-slate-100 text-slate-600 px-2 py-1 rounded-full animate-pulse">
+          <div className="flex items-center bg-gray-100 text-gray-600 border border-gray-300 px-2 py-1 animate-pulse">
             <Cloud className="h-3 w-3 mr-1 animate-spin" />
             <span>Loading weather...</span>
           </div>
@@ -858,7 +756,7 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => (
       {/* Stored Weather (Fallback) */}
       {!destination.current_weather && !weatherLoading[destination.id] && destination.general_weather && (
         <div className="flex items-center space-x-2 mb-2 text-xs">
-          <div className="flex items-center bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+          <div className="flex items-center bg-gray-100 text-black border border-gray-300 px-2 py-1">
             <Cloud className="h-3 w-3 mr-1" />
             <span>{destination.general_weather}</span>
           </div>
@@ -868,7 +766,7 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => (
       {/* Best Season */}
       {destination.best_season && (
         <div className="flex items-center space-x-2 text-xs">
-          <div className="flex items-center bg-green-50 text-green-700 px-2 py-1 rounded-full">
+          <div className="flex items-center bg-white text-black border border-gray-300 px-2 py-1">
             <Calendar className="h-3 w-3 mr-1" />
             <span>Best: {destination.best_season}</span>
           </div>
