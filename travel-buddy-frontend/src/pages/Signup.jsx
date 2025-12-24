@@ -1,18 +1,26 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Eye, EyeOff, Phone } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Phone, CheckCircle } from 'lucide-react';
+import Swal from 'sweetalert2';
+import { useGoogleLogin } from '@react-oauth/google';
+import { authService } from '../services/authService';
+import { sendOTPEmail } from '../services/emailService';
 
 const Signup = ({ onSignup }) => {
+  const [step, setStep] = useState(1); // 1: signup form, 2: OTP verification
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
-    phone: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    first_name: '',
+    last_name: '',
+    phone: ''
   });
+  const [otp, setOtp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -26,28 +34,226 @@ const Signup = ({ onSignup }) => {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match!');
+      await Swal.fire({
+        icon: 'error',
+        title: 'Password Mismatch',
+        text: 'Passwords do not match!'
+      });
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Weak Password',
+        text: 'Password must be at least 6 characters long!'
+      });
       return;
     }
 
     setIsLoading(true);
 
-    // Simulate API call - will be replaced with actual backend
-    setTimeout(() => {
-      onSignup({
-        id: Date.now(),
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        preferences: {
-          budget: 'standard',
-          travelStyle: 'adventure'
-        }
+    try {
+      const response = await authService.signup(formData);
+      setUserEmail(response.email);
+      
+      // Send OTP via EmailJS
+      const emailResult = await sendOTPEmail(
+        response.email,
+        response.otp_code,
+        formData.first_name || 'User'
+      );
+
+      if (emailResult.success) {
+        await Swal.fire({
+          icon: 'success',
+          title: 'Signup Successful!',
+          text: 'Please check your email for OTP verification code.',
+          confirmButtonColor: '#3b82f6'
+        });
+        setStep(2); // Move to OTP verification
+      } else {
+        await Swal.fire({
+          icon: 'warning',
+          title: 'Email Send Failed',
+          text: `Your account was created but email failed to send. Your OTP: ${response.otp_code}`,
+          confirmButtonColor: '#f59e0b'
+        });
+        setStep(2);
+      }
+    } catch (error) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Signup Failed',
+        text: error.message
       });
-      navigate('/');
-    }, 1000);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    
+    if (otp.length !== 6) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Invalid OTP',
+        text: 'OTP must be 6 digits!'
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await authService.verifyOTP(userEmail, otp);
+      
+      await Swal.fire({
+        icon: 'success',
+        title: 'Email Verified!',
+        text: 'Your account has been verified successfully.',
+        confirmButtonColor: '#10b981'
+      });
+
+      onSignup(response.user);
+      navigate('/');
+    } catch (error) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Verification Failed',
+        text: error.message
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setIsLoading(true);
+    try {
+      const response = await authService.resendOTP(userEmail);
+      
+      // Send new OTP via EmailJS
+      await sendOTPEmail(
+        response.email,
+        response.otp_code,
+        formData.first_name || 'User'
+      );
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'OTP Resent',
+        text: 'A new OTP has been sent to your email.',
+        confirmButtonColor: '#3b82f6'
+      });
+    } catch (error) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Resend Failed',
+        text: error.message
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setIsLoading(true);
+      try {
+        const response = await authService.googleAuth(tokenResponse.access_token);
+        
+        await Swal.fire({
+          icon: 'success',
+          title: 'Welcome!',
+          text: response.is_new_user ? 'Account created successfully!' : 'Login successful!',
+          timer: 1500,
+          showConfirmButton: false
+        });
+
+        onSignup(response.user);
+        navigate('/');
+      } catch (error) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Google Auth Failed',
+          text: error.message
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onError: () => {
+      Swal.fire({
+        icon: 'error',
+        title: 'Google Login Failed',
+        text: 'Failed to authenticate with Google'
+      });
+    }
+  });
+
+  // OTP Verification Step
+  if (step === 2) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gray-50">
+        <div className="max-w-md w-full bg-white p-8">
+          <div className="mb-8 text-center">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Mail className="h-8 w-8 text-blue-600" />
+            </div>
+            <h2 className="text-3xl font-bold text-slate-900 mb-2">Verify Your Email</h2>
+            <p className="text-slate-600">We sent a 6-digit code to</p>
+            <p className="text-blue-600 font-medium">{userEmail}</p>
+          </div>
+
+          <form onSubmit={handleVerifyOTP} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-900 mb-2">Enter OTP Code</label>
+              <input
+                type="text"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                className="w-full px-4 py-3 text-center text-2xl font-bold tracking-widest bg-blue-50 border-0 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                maxLength={6}
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading || otp.length !== 6}
+              className="w-full bg-blue-600 text-white py-3 font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Verifying...' : 'Verify Email'}
+            </button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={handleResendOTP}
+                disabled={isLoading}
+                className="text-blue-600 hover:text-blue-700 font-medium text-sm disabled:opacity-50"
+              >
+                Didn't receive code? Resend OTP
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="w-full text-slate-600 hover:text-slate-900 font-medium text-sm"
+            >
+              ← Back to Signup
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // Signup Form Step
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gray-50">
       <div className="max-w-md w-full bg-white p-8">
@@ -57,17 +263,34 @@ const Signup = ({ onSignup }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Name Input */}
+          {/* First Name */}
           <div>
-            <label className="block text-sm font-medium text-slate-900 mb-2">Full Name</label>
+            <label className="block text-sm font-medium text-slate-900 mb-2">First Name</label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
               <input
                 type="text"
-                name="name"
-                value={formData.name}
+                name="first_name"
+                value={formData.first_name}
                 onChange={handleChange}
-                placeholder="Enter your full name"
+                placeholder="Enter your first name"
+                className="w-full pl-12 pr-4 py-3 bg-blue-50 border-0 text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Last Name */}
+          <div>
+            <label className="block text-sm font-medium text-slate-900 mb-2">Last Name</label>
+            <div className="relative">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+              <input
+                type="text"
+                name="last_name"
+                value={formData.last_name}
+                onChange={handleChange}
+                placeholder="Enter your last name"
                 className="w-full pl-12 pr-4 py-3 bg-blue-50 border-0 text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
@@ -187,7 +410,9 @@ const Signup = ({ onSignup }) => {
           {/* Google Signup */}
           <button
             type="button"
-            className="w-full bg-white border border-slate-300 text-slate-700 py-3 font-medium hover:bg-gray-50 transition-colors flex items-center justify-center space-x-3"
+            onClick={() => googleLogin()}
+            disabled={isLoading}
+            className="w-full bg-white border border-slate-300 text-slate-700 py-3 font-medium hover:bg-gray-50 transition-colors flex items-center justify-center space-x-3 disabled:opacity-50"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
