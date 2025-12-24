@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import useVoiceInput from '../hooks/useVoiceInput';
 import { motion } from 'framer-motion';
+import config from '../config';
 import { 
   Send, Sparkles, Mountain, Palmtree, Snowflake, Waves, 
   Building2, Star, Plane, Bus, Bike, UtensilsCrossed, 
@@ -44,7 +45,7 @@ const Home = ({ user, onLogout }) => {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/weather/?lat=${destination.latitude}&lon=${destination.longitude}`
+        `${config.API_BASE_URL}/api/weather/?lat=${destination.latitude}&lon=${destination.longitude}`
       );
       
       if (response.ok) {
@@ -78,7 +79,7 @@ const Home = ({ user, onLogout }) => {
     setWeatherLoading({});
     try {
       const response = await fetch(
-        `http://localhost:8000/api/destinations/smart_search/?q=${encodeURIComponent(query)}&limit=20`
+        `${config.API_BASE_URL}/api/destinations/smart_search/?q=${encodeURIComponent(query)}&limit=20`
       );
       
       if (response.ok) {
@@ -175,7 +176,7 @@ const Home = ({ user, onLogout }) => {
     const fetchDestinations = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:8000/api/destinations/');
+        const response = await fetch(`${config.API_BASE_URL}/api/destinations/`);
         if (response.ok) {
           const data = await response.json();
           // Handle both paginated and non-paginated responses
@@ -661,7 +662,7 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => (
     <div className="relative h-48 overflow-hidden">
       {destination.image ? (
         <img 
-          src={destination.image.startsWith('http') ? destination.image : `http://localhost:8000${destination.image}`} 
+          src={destination.image.startsWith('http') ? destination.image : `${config.API_BASE_URL}${destination.image}`} 
           alt={destination.name} 
           className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" 
         />
@@ -976,7 +977,7 @@ const ExploreCard = ({ destination, delay }) => (
     <div className="relative h-48 overflow-hidden">
       {destination.image ? (
         <img 
-          src={destination.image.startsWith('http') ? destination.image : `http://localhost:8000${destination.image}`} 
+          src={destination.image.startsWith('http') ? destination.image : `${config.API_BASE_URL}${destination.image}`} 
           alt={destination.name} 
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" 
         />

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
+import config from '../../config';
 import { 
   Users, MapPin, Hotel, TrendingUp, 
   Settings, LogOut, Menu, X, BarChart3,
@@ -62,7 +63,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
   useEffect(() => {
     const fetchDestinations = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/destinations/');
+        const response = await fetch(`${config.API_BASE_URL}/api/destinations/`);
         if (response.ok) {
           const data = await response.json();
           // Handle both paginated and non-paginated responses
@@ -81,7 +82,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
   useEffect(() => {
     const fetchHotels = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/hotels/');
+        const response = await fetch(`${config.API_BASE_URL}/api/hotels/`);
         if (response.ok) {
           const data = await response.json();
           setHotels(Array.isArray(data) ? data : (data.results || []));
@@ -158,7 +159,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
 
   const handleUpdateDestination = async (formData) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/destinations/${selectedDestination.id}/`, {
+      const response = await fetch(`${config.API_BASE_URL}/api/destinations/${selectedDestination.id}/`, {
         method: 'PUT',
         body: formData,
       });
@@ -211,7 +212,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
 
     if (result.isConfirmed) {
       try {
-        const response = await fetch(`http://localhost:8000/api/destinations/${destId}/`, {
+        const response = await fetch(`${config.API_BASE_URL}/api/destinations/${destId}/`, {
           method: 'DELETE',
         });
 
@@ -240,7 +241,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
 
   const handleAddDestination = async (formData) => {
     try {
-      const response = await fetch('http://localhost:8000/api/destinations/', {
+      const response = await fetch(`${config.API_BASE_URL}/api/destinations/`, {
         method: 'POST',
         body: formData,
         // Don't set Content-Type header - browser will set it automatically with boundary
@@ -302,7 +303,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
 
     if (result.isConfirmed) {
       try {
-        const response = await fetch(`http://localhost:8000/api/hotels/${hotelId}/`, {
+        const response = await fetch(`${config.API_BASE_URL}/api/hotels/${hotelId}/`, {
           method: 'DELETE',
         });
 
@@ -708,7 +709,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                       <div key={dest.id} className="card p-4 hover:shadow-lg transition-shadow">
                         {dest.image && (
                           <img 
-                            src={dest.image.startsWith('http') ? dest.image : `http://localhost:8000${dest.image}`}
+                            src={dest.image.startsWith('http') ? dest.image : `${config.API_BASE_URL}${dest.image}`}
                             alt={dest.name}
                             className="w-full h-48 object-cover mb-3"
                             onError={(e) => {
@@ -1338,7 +1339,7 @@ const ViewDestinationModal = ({ destination, onClose, onEdit, onDelete }) => {
           {destination.image && (
             <div className="relative h-64 rounded-xl overflow-hidden">
               <img
-                src={destination.image.startsWith('http') ? destination.image : `http://localhost:8000${destination.image}`}
+                src={destination.image.startsWith('http') ? destination.image : `${config.API_BASE_URL}${destination.image}`}
                 alt={destination.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -1635,8 +1636,8 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
     
     try {
       const url = hotel 
-        ? `http://localhost:8000/api/hotels/${hotel.id}/`
-        : 'http://localhost:8000/api/hotels/';
+        ? `${config.API_BASE_URL}/api/hotels/${hotel.id}/`
+        : `${config.API_BASE_URL}/api/hotels/`;
       
       const method = hotel ? 'PUT' : 'POST';
       

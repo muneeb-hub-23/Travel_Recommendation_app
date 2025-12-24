@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import config from '../config';
 
 // Fix for default marker icon in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -41,7 +42,7 @@ const AddDestinationForm = ({ onClose, onSubmit, initialData = null, isEdit = fa
   const [loadingWeather, setLoadingWeather] = useState(false);
   const [imagePreview, setImagePreview] = useState(() => {
     if (initialData?.image) {
-      return initialData.image.startsWith('http') ? initialData.image : `http://localhost:8000${initialData.image}`;
+      return initialData.image.startsWith('http') ? initialData.image : `${config.API_BASE_URL}${initialData.image}`;
     }
     return null;
   });
@@ -255,7 +256,7 @@ const AddDestinationForm = ({ onClose, onSubmit, initialData = null, isEdit = fa
         params.append('lon', formData.longitude);
       }
 
-      const response = await fetch(`http://localhost:8000/api/weather/?${params}`);
+      const response = await fetch(`${config.API_BASE_URL}/api/weather/?${params}`);
       const data = await response.json();
       
       if (response.ok) {

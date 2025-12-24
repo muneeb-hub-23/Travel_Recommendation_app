@@ -27,7 +27,7 @@ The script will:
 pip install -r requirements.txt
 
 # Download spaCy model
-python -m spacy download en_core_web_sm
+python -m spacy download en_core_web_lg
 
 # Run Django server
 python manage.py runserver
@@ -122,10 +122,10 @@ travel-buddy-backend/
 
 ## Troubleshooting
 
-### Issue: "Can't find model 'en_core_web_sm'"
+### Issue: "Can't find model 'en_core_web_lg'"
 **Solution:**
 ```bash
-python -m spacy download en_core_web_sm
+python -m spacy download en_core_web_lg
 ```
 
 ### Issue: "ModuleNotFoundError: No module named 'sklearn'"

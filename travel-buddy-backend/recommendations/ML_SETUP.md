@@ -18,24 +18,29 @@ This will install:
 
 ### 2. Download spaCy Language Model
 
-After installing the dependencies, download the English language model for spaCy:
+After installing the dependencies, download the large English language model for spaCy:
 
 ```bash
-python -m spacy download en_core_web_sm
+python -m spacy download en_core_web_lg
 ```
 
-For better performance, you can use larger models:
-```bash
-# Medium model (better accuracy, slower)
-python -m spacy download en_core_web_md
+The large model provides:
+- Best accuracy for NER and POS tagging
+- 685k word vectors for superior text similarity
+- Better performance for advanced NLP tasks
 
-# Large model (best accuracy, slowest)
-python -m spacy download en_core_web_lg
+For lower-resource environments, you can use smaller models:
+```bash
+# Small model (11 MB, fast but no word vectors)
+python -m spacy download en_core_web_sm
+
+# Medium model (40 MB, good balance)
+python -m spacy download en_core_web_md
 ```
 
 If you use a different model, update the model name in `ml_engine.py`:
 ```python
-nlp_model = spacy.load('en_core_web_md')  # or 'en_core_web_lg'
+nlp_model = spacy.load('en_core_web_sm')  # or 'en_core_web_md'
 ```
 
 ## Features

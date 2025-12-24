@@ -55,7 +55,7 @@ python setup_ml.py
 Or manually install spaCy model:
 
 ```bash
-python -m spacy download en_core_web_sm
+python -m spacy download en_core_web_lg
 ```
 
 For more details, see [ML_SETUP.md](recommendations/ML_SETUP.md)
