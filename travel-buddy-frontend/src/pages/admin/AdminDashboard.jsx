@@ -35,10 +35,10 @@ const AdminDashboard = ({ admin, onLogout }) => {
   }, [activeTab]);
 
   const stats = [
-    { id: 1, label: 'Total Users', value: '12,458', change: '+12.5%', icon: Users, color: 'from-blue-500 to-cyan-500' },
-    { id: 2, label: 'Active Trips', value: '3,241', change: '+8.2%', icon: MapPin, color: 'from-green-500 to-emerald-500' },
-    { id: 3, label: 'Destinations', value: '487', change: '+5.7%', icon: Hotel, color: 'from-purple-500 to-pink-500' },
-    { id: 4, label: 'Total Reviews', value: '8,934', change: '+15.8%', icon: MessageSquare, color: 'from-orange-500 to-red-500' },
+    { id: 1, label: 'Total Users', value: '12,458', change: '+12.5%', icon: Users },
+    { id: 2, label: 'Active Trips', value: '3,241', change: '+8.2%', icon: MapPin },
+    { id: 3, label: 'Destinations', value: '487', change: '+5.7%', icon: Hotel },
+    { id: 4, label: 'Total Reviews', value: '8,934', change: '+15.8%', icon: MessageSquare },
   ];
 
   const recentUsers = [
@@ -369,48 +369,48 @@ const AdminDashboard = ({ admin, onLogout }) => {
       <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        className="fixed top-0 w-full bg-white shadow-sm z-40"
+        className="fixed top-0 w-full bg-black shadow-sm z-40"
       >
         <div className="px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-800 transition-colors"
             >
-              {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {sidebarOpen ? <X className="h-6 w-6 text-white" /> : <Menu className="h-6 w-6 text-white" />}
             </button>
             <div className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-2 rounded-xl">
-                <Shield className="h-6 w-6 text-white" />
+              <div className="bg-white p-2">
+                <Shield className="h-6 w-6 text-black" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-slate-800">Admin Dashboard</h1>
-                <p className="text-xs text-slate-500">AI Travel Buddy</p>
+                <h1 className="text-lg font-bold text-white">Admin Dashboard</h1>
+                <p className="text-xs text-gray-400">Travel Buddy</p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
-            <button className="relative p-2 hover:bg-slate-100 rounded-lg transition-colors">
-              <Bell className="h-5 w-5 text-slate-600" />
-              <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+            <button className="relative p-2 hover:bg-gray-800 transition-colors">
+              <Bell className="h-5 w-5 text-white" />
+              <span className="absolute top-1 right-1 h-2 w-2 bg-white"></span>
             </button>
             
-            <div className="flex items-center space-x-3 px-4 py-2 bg-slate-100 rounded-full">
-              <div className="h-8 w-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
+            <div className="flex items-center space-x-3 px-4 py-2 bg-white">
+              <div className="h-8 w-8 bg-black flex items-center justify-center">
                 <span className="text-white text-sm font-semibold">
                   {admin?.name?.charAt(0) || 'A'}
                 </span>
               </div>
               <div className="hidden md:block">
-                <p className="text-sm font-medium text-slate-800">{admin?.name}</p>
-                <p className="text-xs text-slate-500">{admin?.role}</p>
+                <p className="text-sm font-medium text-black">{admin?.name}</p>
+                <p className="text-xs text-gray-600">{admin?.role}</p>
               </div>
             </div>
 
             <button
               onClick={onLogout}
-              className="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-600"
+              className="p-2 hover:bg-gray-800 transition-colors text-white"
             >
               <LogOut className="h-5 w-5" />
             </button>
@@ -423,17 +423,17 @@ const AdminDashboard = ({ admin, onLogout }) => {
         <motion.aside
           initial={{ x: -300 }}
           animate={{ x: sidebarOpen ? 0 : -300 }}
-          className="fixed left-0 w-64 h-[calc(100vh-4rem)] bg-white shadow-lg z-30 overflow-y-auto"
+          className="fixed left-0 w-64 h-[calc(100vh-4rem)] bg-black shadow-lg z-30 overflow-y-auto"
         >
           <div className="p-4 space-y-2">
             {menuItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                className={`w-full flex items-center space-x-3 px-4 py-3 transition-all duration-200 ${
                   activeTab === item.id
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                    : 'text-slate-600 hover:bg-slate-100'
+                    ? 'bg-white text-black'
+                    : 'text-white hover:bg-gray-800'
                 }`}
               >
                 <item.icon className="h-5 w-5" />
@@ -463,10 +463,10 @@ const AdminDashboard = ({ admin, onLogout }) => {
                       className="card p-6"
                     >
                       <div className="flex items-center justify-between mb-4">
-                        <div className={`p-3 rounded-xl bg-gradient-to-r ${stat.color}`}>
+                        <div className="p-3 bg-black">
                           <stat.icon className="h-6 w-6 text-white" />
                         </div>
-                        <span className="text-green-600 text-sm font-semibold">{stat.change}</span>
+                        <span className="text-black text-sm font-semibold">{stat.change}</span>
                       </div>
                       <h3 className="text-2xl font-bold text-slate-800 mb-1">{stat.value}</h3>
                       <p className="text-slate-600 text-sm">{stat.label}</p>
@@ -485,9 +485,9 @@ const AdminDashboard = ({ admin, onLogout }) => {
                     </div>
                     <div className="space-y-4">
                       {recentUsers.map((user) => (
-                        <div key={user.id} className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition-colors">
+                        <div key={user.id} className="flex items-center justify-between p-3 hover:bg-slate-50 transition-colors">
                           <div className="flex items-center space-x-3">
-                            <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                            <div className="h-10 w-10 bg-black flex items-center justify-center">
                               <span className="text-white font-semibold">{user.name.charAt(0)}</span>
                             </div>
                             <div>
@@ -497,10 +497,10 @@ const AdminDashboard = ({ admin, onLogout }) => {
                           </div>
                           <div className="text-right">
                             <p className="text-xs text-slate-500">{user.joined}</p>
-                            <span className={`text-xs px-2 py-1 rounded-full ${
+                            <span className={`text-xs px-2 py-1 ${
                               user.status === 'active' 
-                                ? 'bg-green-100 text-green-700' 
-                                : 'bg-slate-100 text-slate-700'
+                                ? 'bg-black text-white' 
+                                : 'bg-gray-200 text-black'
                             }`}>
                               {user.status}
                             </span>
@@ -520,15 +520,15 @@ const AdminDashboard = ({ admin, onLogout }) => {
                     </div>
                     <div className="space-y-4">
                       {popularDestinations.map((dest, index) => (
-                        <div key={dest.id} className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition-colors">
+                        <div key={dest.id} className="flex items-center justify-between p-3 hover:bg-slate-50 transition-colors">
                           <div className="flex items-center space-x-3">
-                            <div className="h-10 w-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                            <div className="h-10 w-10 bg-black flex items-center justify-center">
                               <span className="text-white font-bold">{index + 1}</span>
                             </div>
                             <div>
                               <p className="font-medium text-slate-800">{dest.name}</p>
                               <div className="flex items-center space-x-2">
-                                <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
+                                <Star className="h-3 w-3 text-black fill-black" />
                                 <span className="text-xs text-slate-600">{dest.rating}</span>
                                 <span className="text-xs text-slate-400">•</span>
                                 <span className="text-xs text-slate-600">{dest.visits} visits</span>
@@ -576,10 +576,10 @@ const AdminDashboard = ({ admin, onLogout }) => {
                     <input
                       type="text"
                       placeholder="Search users..."
-                      className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      className="w-full pl-10 pr-4 py-2 border border-slate-300 focus:ring-2 focus:ring-black"
                     />
                   </div>
-                  <button className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center space-x-2">
+                  <button className="px-4 py-2 border border-slate-300  hover:bg-slate-50 flex items-center space-x-2">
                     <Filter className="h-4 w-4" />
                     <span>Filter</span>
                   </button>
@@ -602,7 +602,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                         <tr key={user.id} className="hover:bg-slate-50">
                           <td className="px-4 py-4">
                             <div className="flex items-center space-x-3">
-                              <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                              <div className="h-10 w-10 bg-black flex items-center justify-center">
                                 <span className="text-white font-semibold">{user.name.charAt(0)}</span>
                               </div>
                               <div>
@@ -618,15 +618,15 @@ const AdminDashboard = ({ admin, onLogout }) => {
                             </div>
                           </td>
                           <td className="px-4 py-4">
-                            <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                            <span className="px-3 py-1 bg-gray-200 text-black text-sm font-medium">
                               {user.trips} trips
                             </span>
                           </td>
                           <td className="px-4 py-4">
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            <span className={`px-3 py-1 text-sm font-medium ${
                               user.status === 'active' 
-                                ? 'bg-green-100 text-green-700' 
-                                : 'bg-slate-100 text-slate-700'
+                                ? 'bg-black text-white' 
+                                : 'bg-gray-200 text-black'
                             }`}>
                               {user.status}
                             </span>
@@ -634,14 +634,14 @@ const AdminDashboard = ({ admin, onLogout }) => {
                           <td className="px-4 py-4 text-sm text-slate-600">{user.joined}</td>
                           <td className="px-4 py-4">
                             <div className="flex justify-end space-x-2">
-                              <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                              <button className="p-2 hover:bg-slate-100 transition-colors">
                                 <Eye className="h-4 w-4 text-slate-600" />
                               </button>
-                              <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                              <button className="p-2 hover:bg-slate-100 transition-colors">
                                 <Edit className="h-4 w-4 text-slate-600" />
                               </button>
-                              <button className="p-2 hover:bg-red-50 rounded-lg transition-colors">
-                                <Trash2 className="h-4 w-4 text-red-600" />
+                              <button className="p-2 hover:bg-slate-100 transition-colors">
+                                <Trash2 className="h-4 w-4 text-slate-600" />
                               </button>
                             </div>
                           </td>
@@ -681,7 +681,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                       placeholder="Search destinations by name, country, or category..."
                       value={destinationSearch}
                       onChange={(e) => setDestinationSearch(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-3 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -710,7 +710,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                           <img 
                             src={dest.image.startsWith('http') ? dest.image : `http://localhost:8000${dest.image}`}
                             alt={dest.name}
-                            className="w-full h-48 object-cover rounded-lg mb-3"
+                            className="w-full h-48 object-cover mb-3"
                             onError={(e) => {
                               e.target.onerror = null;
                               e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
@@ -726,7 +726,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                         
                         <div className="flex items-center space-x-4 mb-3">
                           <div className="flex items-center space-x-1">
-                            <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                            <Star className="h-4 w-4 text-black fill-black" />
                             <span className="text-sm font-medium">{dest.rating || '0.0'}</span>
                           </div>
                           <div className="flex items-center space-x-1">
@@ -735,7 +735,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                           </div>
                         </div>
 
-                        <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium mb-3">
+                        <span className="inline-block px-2 py-1 bg-gray-200 text-black text-xs font-medium mb-3">
                           {dest.category}
                         </span>
 
@@ -758,7 +758,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                           </button>
                           <button 
                             onClick={() => handleDeleteDestination(dest.id)}
-                            className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center"
+                            className="px-3 py-2 bg-black text-white  hover:bg-gray-900 transition-colors flex items-center justify-center"
                             title="Delete"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -799,7 +799,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                       placeholder="Search hotels by name, destination, or location..."
                       value={hotelSearch}
                       onChange={(e) => setHotelSearch(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-3 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -831,7 +831,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                         
                         <div className="flex items-center space-x-2 mb-3">
                           <div className="flex items-center space-x-1">
-                            <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                            <Star className="h-4 w-4 text-black fill-black" />
                             <span className="text-sm font-medium">{hotel.rating || '0.0'}</span>
                           </div>
                           <span className="text-xs text-slate-500">•</span>
@@ -839,7 +839,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                         </div>
 
                         {/* Pricing Grid */}
-                        <div className="bg-slate-50 rounded-lg p-3 mb-3">
+                        <div className="bg-slate-50  p-3 mb-3">
                           <p className="text-xs font-semibold text-slate-700 mb-2">Pricing (per night)</p>
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             <div>
@@ -911,7 +911,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                           </button>
                           <button 
                             onClick={() => handleDeleteHotel(hotel.id)}
-                            className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center"
+                            className="px-3 py-2 bg-black text-white  hover:bg-gray-900 transition-colors flex items-center justify-center"
                             title="Delete"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -959,9 +959,9 @@ const AdminDashboard = ({ admin, onLogout }) => {
                             <span className="font-medium text-slate-700">{cat.name}</span>
                             <span className="text-sm text-slate-600">{cat.count} visits ({cat.percentage}%)</span>
                           </div>
-                          <div className="w-full bg-slate-200 rounded-full h-2">
+                          <div className="w-full bg-slate-200  h-2">
                             <div
-                              className="bg-gradient-to-r from-primary-600 to-accent-600 h-2 rounded-full"
+                              className="bg-gradient-to-r from-primary-600 to-accent-600 h-2 "
                               style={{ width: `${cat.percentage}%` }}
                             ></div>
                           </div>
@@ -990,7 +990,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-slate-800">Reviews Management</h2>
                   <div className="flex space-x-2">
-                    <button className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center space-x-2">
+                    <button className="px-4 py-2 border border-slate-300  hover:bg-slate-50 flex items-center space-x-2">
                       <Filter className="h-4 w-4" />
                       <span>Filter</span>
                     </button>
@@ -999,10 +999,10 @@ const AdminDashboard = ({ admin, onLogout }) => {
 
                 <div className="space-y-4">
                   {allReviews.map((review) => (
-                    <div key={review.id} className="p-4 border border-slate-200 rounded-lg hover:shadow-md transition-shadow">
+                    <div key={review.id} className="p-4 border border-slate-200  hover:shadow-md transition-shadow">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center space-x-3">
-                          <div className="h-10 w-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                          <div className="h-10 w-10 bg-gradient-to-r from-purple-500 to-pink-500  flex items-center justify-center">
                             <span className="text-white font-semibold">{review.user.charAt(0)}</span>
                           </div>
                           <div>
@@ -1023,7 +1023,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                               />
                             ))}
                           </div>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          <span className={`px-2 py-1  text-xs font-medium ${
                             review.sentiment === 'positive'
                               ? 'bg-green-100 text-green-700'
                               : review.sentiment === 'negative'
@@ -1040,16 +1040,16 @@ const AdminDashboard = ({ admin, onLogout }) => {
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-slate-500">{review.date}</span>
                         <div className="flex space-x-2">
-                          <button className="p-2 hover:bg-green-50 rounded-lg transition-colors">
+                          <button className="p-2 hover:bg-green-50  transition-colors">
                             <ThumbsUp className="h-4 w-4 text-green-600" />
                           </button>
-                          <button className="p-2 hover:bg-red-50 rounded-lg transition-colors">
+                          <button className="p-2 hover:bg-red-50  transition-colors">
                             <ThumbsDown className="h-4 w-4 text-red-600" />
                           </button>
-                          <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                          <button className="p-2 hover:bg-slate-100  transition-colors">
                             <Eye className="h-4 w-4 text-slate-600" />
                           </button>
-                          <button className="p-2 hover:bg-red-50 rounded-lg transition-colors">
+                          <button className="p-2 hover:bg-red-50  transition-colors">
                             <Trash2 className="h-4 w-4 text-red-600" />
                           </button>
                         </div>
@@ -1077,7 +1077,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                         <input
                           type="text"
                           value={systemSettings.general.siteName}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                          className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500"
                           readOnly
                         />
                       </div>
@@ -1086,7 +1086,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                         <input
                           type="text"
                           value={systemSettings.general.tagline}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                          className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500"
                           readOnly
                         />
                       </div>
@@ -1095,7 +1095,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                         <input
                           type="email"
                           value={systemSettings.general.contactEmail}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                          className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500"
                           readOnly
                         />
                       </div>
@@ -1104,7 +1104,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                         <input
                           type="tel"
                           value={systemSettings.general.supportPhone}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                          className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500"
                           readOnly
                         />
                       </div>
@@ -1122,8 +1122,8 @@ const AdminDashboard = ({ admin, onLogout }) => {
                           <p className="font-medium text-slate-700">Two-Factor Authentication</p>
                           <p className="text-sm text-slate-500">Add an extra layer of security</p>
                         </div>
-                        <div className={`w-12 h-6 rounded-full ${systemSettings.security.twoFactorAuth ? 'bg-green-500' : 'bg-slate-300'} relative cursor-pointer`}>
-                          <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${systemSettings.security.twoFactorAuth ? 'transform translate-x-6' : ''}`}></div>
+                        <div className={`w-12 h-6  ${systemSettings.security.twoFactorAuth ? 'bg-green-500' : 'bg-slate-300'} relative cursor-pointer`}>
+                          <div className={`absolute top-1 left-1 w-4 h-4 bg-white  transition-transform ${systemSettings.security.twoFactorAuth ? 'transform translate-x-6' : ''}`}></div>
                         </div>
                       </div>
                       <div>
@@ -1131,7 +1131,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                         <input
                           type="number"
                           value={systemSettings.security.sessionTimeout}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                          className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500"
                           readOnly
                         />
                       </div>
@@ -1140,7 +1140,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
                         <input
                           type="number"
                           value={systemSettings.security.maxLoginAttempts}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                          className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500"
                           readOnly
                         />
                       </div>
@@ -1158,8 +1158,8 @@ const AdminDashboard = ({ admin, onLogout }) => {
                           <p className="font-medium text-slate-700">AI Recommendations</p>
                           <p className="text-sm text-slate-500">ML-powered travel suggestions</p>
                         </div>
-                        <div className={`w-12 h-6 rounded-full ${systemSettings.features.aiRecommendations ? 'bg-green-500' : 'bg-slate-300'} relative cursor-pointer`}>
-                          <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${systemSettings.features.aiRecommendations ? 'transform translate-x-6' : ''}`}></div>
+                        <div className={`w-12 h-6  ${systemSettings.features.aiRecommendations ? 'bg-green-500' : 'bg-slate-300'} relative cursor-pointer`}>
+                          <div className={`absolute top-1 left-1 w-4 h-4 bg-white  transition-transform ${systemSettings.features.aiRecommendations ? 'transform translate-x-6' : ''}`}></div>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
@@ -1167,8 +1167,8 @@ const AdminDashboard = ({ admin, onLogout }) => {
                           <p className="font-medium text-slate-700">User Reviews</p>
                           <p className="text-sm text-slate-500">Allow users to post reviews</p>
                         </div>
-                        <div className={`w-12 h-6 rounded-full ${systemSettings.features.userReviews ? 'bg-green-500' : 'bg-slate-300'} relative cursor-pointer`}>
-                          <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${systemSettings.features.userReviews ? 'transform translate-x-6' : ''}`}></div>
+                        <div className={`w-12 h-6  ${systemSettings.features.userReviews ? 'bg-green-500' : 'bg-slate-300'} relative cursor-pointer`}>
+                          <div className={`absolute top-1 left-1 w-4 h-4 bg-white  transition-transform ${systemSettings.features.userReviews ? 'transform translate-x-6' : ''}`}></div>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
@@ -1176,8 +1176,8 @@ const AdminDashboard = ({ admin, onLogout }) => {
                           <p className="font-medium text-slate-700">Email Notifications</p>
                           <p className="text-sm text-slate-500">Send email updates to users</p>
                         </div>
-                        <div className={`w-12 h-6 rounded-full ${systemSettings.features.emailNotifications ? 'bg-green-500' : 'bg-slate-300'} relative cursor-pointer`}>
-                          <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${systemSettings.features.emailNotifications ? 'transform translate-x-6' : ''}`}></div>
+                        <div className={`w-12 h-6  ${systemSettings.features.emailNotifications ? 'bg-green-500' : 'bg-slate-300'} relative cursor-pointer`}>
+                          <div className={`absolute top-1 left-1 w-4 h-4 bg-white  transition-transform ${systemSettings.features.emailNotifications ? 'transform translate-x-6' : ''}`}></div>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
@@ -1185,8 +1185,8 @@ const AdminDashboard = ({ admin, onLogout }) => {
                           <p className="font-medium text-slate-700">SMS Notifications</p>
                           <p className="text-sm text-slate-500">Send SMS alerts to users</p>
                         </div>
-                        <div className={`w-12 h-6 rounded-full ${systemSettings.features.smsNotifications ? 'bg-green-500' : 'bg-slate-300'} relative cursor-pointer`}>
-                          <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${systemSettings.features.smsNotifications ? 'transform translate-x-6' : ''}`}></div>
+                        <div className={`w-12 h-6  ${systemSettings.features.smsNotifications ? 'bg-green-500' : 'bg-slate-300'} relative cursor-pointer`}>
+                          <div className={`absolute top-1 left-1 w-4 h-4 bg-white  transition-transform ${systemSettings.features.smsNotifications ? 'transform translate-x-6' : ''}`}></div>
                         </div>
                       </div>
                     </div>
@@ -1198,19 +1198,19 @@ const AdminDashboard = ({ admin, onLogout }) => {
                       <span>Database Info</span>
                     </h3>
                     <div className="space-y-3">
-                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                      <div className="flex justify-between items-center p-3 bg-slate-50 ">
                         <span className="text-sm text-slate-600">Total Users</span>
                         <span className="font-bold text-slate-800">12,458</span>
                       </div>
-                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                      <div className="flex justify-between items-center p-3 bg-slate-50 ">
                         <span className="text-sm text-slate-600">Total Destinations</span>
                         <span className="font-bold text-slate-800">487</span>
                       </div>
-                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                      <div className="flex justify-between items-center p-3 bg-slate-50 ">
                         <span className="text-sm text-slate-600">Total Reviews</span>
                         <span className="font-bold text-slate-800">8,934</span>
                       </div>
-                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                      <div className="flex justify-between items-center p-3 bg-slate-50 ">
                         <span className="text-sm text-slate-600">Active Trips</span>
                         <span className="font-bold text-slate-800">3,241</span>
                       </div>
@@ -1326,7 +1326,7 @@ const ViewDestinationModal = ({ destination, onClose, onEdit, onDelete }) => {
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-100  transition-colors"
           >
             <X className="h-6 w-6 text-slate-600" />
           </button>
@@ -1412,7 +1412,7 @@ const ViewDestinationModal = ({ destination, onClose, onEdit, onDelete }) => {
           </button>
           <button
             onClick={onDelete}
-            className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            className="px-6 py-3 bg-black text-white  hover:bg-gray-900 transition-colors"
           >
             <Trash2 className="h-4 w-4 mr-2 inline" />
             Delete
@@ -1428,8 +1428,8 @@ const InfoItem = ({ icon: Icon, label, value }) => {
   if (!Icon || !label || value === undefined || value === null) return null;
   
   return (
-    <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg">
-      <div className="p-2 bg-primary-100 rounded-lg">
+    <div className="flex items-center space-x-3 p-3 bg-slate-50 ">
+      <div className="p-2 bg-primary-100 ">
         <Icon className="h-5 w-5 text-primary-600" />
       </div>
       <div>
@@ -1469,7 +1469,7 @@ const ViewHotelModal = ({ hotel, onClose, onEdit, onDelete }) => {
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-2 hover:bg-white/20  transition-colors"
             >
               <X className="h-6 w-6" />
             </button>
@@ -1490,30 +1490,30 @@ const ViewHotelModal = ({ hotel, onClose, onEdit, onDelete }) => {
           <div>
             <h3 className="text-lg font-bold text-slate-800 mb-4">Pricing (per night)</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="bg-blue-50 p-4 ">
                 <p className="text-sm text-blue-600 font-medium">Single</p>
                 <p className="text-2xl font-bold text-blue-900">PKR {hotel.price_single}</p>
               </div>
-              <div className="bg-green-50 p-4 rounded-lg">
+              <div className="bg-green-50 p-4 ">
                 <p className="text-sm text-green-600 font-medium">Couple</p>
                 <p className="text-2xl font-bold text-green-900">PKR {hotel.price_couple}</p>
               </div>
-              <div className="bg-purple-50 p-4 rounded-lg">
+              <div className="bg-purple-50 p-4 ">
                 <p className="text-sm text-purple-600 font-medium">Executive</p>
                 <p className="text-2xl font-bold text-purple-900">PKR {hotel.price_executive}</p>
               </div>
-              <div className="bg-orange-50 p-4 rounded-lg">
+              <div className="bg-orange-50 p-4 ">
                 <p className="text-sm text-orange-600 font-medium">Family</p>
                 <p className="text-2xl font-bold text-orange-900">PKR {hotel.price_family}</p>
               </div>
               {hotel.price_villa && (
-                <div className="bg-pink-50 p-4 rounded-lg">
+                <div className="bg-pink-50 p-4 ">
                   <p className="text-sm text-pink-600 font-medium">Villa</p>
                   <p className="text-2xl font-bold text-pink-900">PKR {hotel.price_villa}</p>
                 </div>
               )}
               {hotel.price_entire_hotel && (
-                <div className="bg-indigo-50 p-4 rounded-lg">
+                <div className="bg-indigo-50 p-4 ">
                   <p className="text-sm text-indigo-600 font-medium">Entire Hotel</p>
                   <p className="text-2xl font-bold text-indigo-900">PKR {hotel.price_entire_hotel}</p>
                 </div>
@@ -1527,7 +1527,7 @@ const ViewHotelModal = ({ hotel, onClose, onEdit, onDelete }) => {
               <h3 className="text-lg font-bold text-slate-800 mb-3">Amenities</h3>
               <div className="flex flex-wrap gap-2">
                 {hotel.amenities.map((amenity, idx) => (
-                  <span key={idx} className="px-3 py-2 bg-accent-100 text-accent-700 rounded-lg text-sm font-medium">
+                  <span key={idx} className="px-3 py-2 bg-accent-100 text-accent-700  text-sm font-medium">
                     {amenity}
                   </span>
                 ))}
@@ -1543,18 +1543,18 @@ const ViewHotelModal = ({ hotel, onClose, onEdit, onDelete }) => {
 
           {/* Check-in/out & Cancellation */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-slate-50 p-4 rounded-lg">
+            <div className="bg-slate-50 p-4 ">
               <p className="text-sm text-slate-600 mb-1">Check-in Time</p>
               <p className="text-lg font-bold text-slate-800">{hotel.check_in_time}</p>
             </div>
-            <div className="bg-slate-50 p-4 rounded-lg">
+            <div className="bg-slate-50 p-4 ">
               <p className="text-sm text-slate-600 mb-1">Check-out Time</p>
               <p className="text-lg font-bold text-slate-800">{hotel.check_out_time}</p>
             </div>
           </div>
 
           {hotel.cancellation_policy && (
-            <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+            <div className="bg-yellow-50 border border-yellow-200 p-4 ">
               <h4 className="font-bold text-yellow-800 mb-2">Cancellation Policy</h4>
               <p className="text-sm text-yellow-700">{hotel.cancellation_policy}</p>
             </div>
@@ -1567,11 +1567,11 @@ const ViewHotelModal = ({ hotel, onClose, onEdit, onDelete }) => {
             <Edit className="h-4 w-4 mr-2 inline" />
             Edit Hotel
           </button>
-          <button onClick={onDelete} className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium">
+          <button onClick={onDelete} className="px-6 py-3 bg-black text-white  hover:bg-gray-900 transition-colors font-medium">
             <Trash2 className="h-4 w-4 mr-2 inline" />
             Delete
           </button>
-          <button onClick={onClose} className="px-6 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-medium">
+          <button onClick={onClose} className="px-6 py-3 bg-slate-200 text-slate-700  hover:bg-slate-300 transition-colors font-medium">
             Close
           </button>
         </div>
@@ -1694,7 +1694,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
         {/* Header */}
         <div className="bg-gradient-to-r from-primary-600 to-accent-600 p-6 text-white flex justify-between items-center">
           <h2 className="text-2xl font-bold">{hotel ? 'Edit Hotel' : 'Add New Hotel'}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-white/20  transition-colors">
             <X className="h-6 w-6" />
           </button>
         </div>
@@ -1716,14 +1716,14 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
                 }}
                 onFocus={() => setShowDestinationDropdown(true)}
                 placeholder="Search destinations..."
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
             </div>
             
             {/* Dropdown List */}
             {showDestinationDropdown && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              <div className="absolute z-10 w-full mt-1 bg-white border border-slate-300  shadow-lg max-h-60 overflow-y-auto">
                 {filteredDestinations.length === 0 ? (
                   <div className="px-4 py-3 text-sm text-slate-500">
                     No destinations found
@@ -1771,7 +1771,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
                 required
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
             <div>
@@ -1780,7 +1780,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
                 type="text"
                 value={formData.phone}
                 onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -1792,7 +1792,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
             <div>
@@ -1801,7 +1801,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
                 type="url"
                 value={formData.website}
                 onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -1813,7 +1813,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
               value={formData.address}
               onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
               rows="2"
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -1824,7 +1824,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows="4"
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="Describe the hotel, its features, and what makes it special..."
             />
           </div>
@@ -1840,7 +1840,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
                   required
                   value={formData.price_single}
                   onChange={(e) => setFormData(prev => ({ ...prev, price_single: e.target.value }))}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -1850,7 +1850,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
                   required
                   value={formData.price_couple}
                   onChange={(e) => setFormData(prev => ({ ...prev, price_couple: e.target.value }))}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -1860,7 +1860,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
                   required
                   value={formData.price_executive}
                   onChange={(e) => setFormData(prev => ({ ...prev, price_executive: e.target.value }))}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -1870,7 +1870,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
                   required
                   value={formData.price_family}
                   onChange={(e) => setFormData(prev => ({ ...prev, price_family: e.target.value }))}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -1879,7 +1879,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
                   type="number"
                   value={formData.price_villa}
                   onChange={(e) => setFormData(prev => ({ ...prev, price_villa: e.target.value }))}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -1888,7 +1888,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
                   type="number"
                   value={formData.price_entire_hotel}
                   onChange={(e) => setFormData(prev => ({ ...prev, price_entire_hotel: e.target.value }))}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -1904,19 +1904,19 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
                 onChange={(e) => setAmenityInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAmenity())}
                 placeholder="Type amenity and press Enter"
-                className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="flex-1 px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
               <button
                 type="button"
                 onClick={addAmenity}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                className="px-4 py-2 bg-primary-600 text-white  hover:bg-primary-700"
               >
                 Add
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
               {formData.amenities.map((amenity, idx) => (
-                <span key={idx} className="px-3 py-1 bg-accent-100 text-accent-700 rounded-full text-sm flex items-center">
+                <span key={idx} className="px-3 py-1 bg-accent-100 text-accent-700  text-sm flex items-center">
                   {amenity}
                   <button
                     type="button"
@@ -1941,7 +1941,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
                 max="5"
                 value={formData.rating}
                 onChange={(e) => setFormData(prev => ({ ...prev, rating: e.target.value }))}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
             <div>
@@ -1950,7 +1950,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
                 type="number"
                 value={formData.total_rooms}
                 onChange={(e) => setFormData(prev => ({ ...prev, total_rooms: e.target.value }))}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
             <div>
@@ -1959,7 +1959,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
                 type="text"
                 value={formData.check_in_time}
                 onChange={(e) => setFormData(prev => ({ ...prev, check_in_time: e.target.value }))}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
             <div>
@@ -1968,7 +1968,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
                 type="text"
                 value={formData.check_out_time}
                 onChange={(e) => setFormData(prev => ({ ...prev, check_out_time: e.target.value }))}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -1979,7 +1979,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
               value={formData.cancellation_policy}
               onChange={(e) => setFormData(prev => ({ ...prev, cancellation_policy: e.target.value }))}
               rows="3"
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-slate-300  focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -1991,7 +1991,7 @@ const AddHotelModal = ({ destinations, hotel, onClose, onHotelAdded }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-medium"
+              className="px-6 py-3 bg-slate-200 text-slate-700  hover:bg-slate-300 transition-colors font-medium"
             >
               Cancel
             </button>
