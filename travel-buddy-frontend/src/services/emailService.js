@@ -1,8 +1,7 @@
 import emailjs from 'emailjs-com';
+import config from '../config.js';
 
-const SERVICE_ID = import.meta.env.REACT_APP_EMAILJS_SERVICE_ID || 'your_service_id';
-const TEMPLATE_ID = import.meta.env.REACT_APP_EMAILJS_TEMPLATE_ID || 'your_template_id';
-const PUBLIC_KEY = import.meta.env.REACT_APP_EMAILJS_PUBLIC_KEY || 'your_public_key';
+const { SERVICE_ID, TEMPLATE_ID, PUBLIC_KEY } = config.EMAILJS;
 
 export const sendOTPEmail = async (email, otpCode, userName = 'User') => {
   try {

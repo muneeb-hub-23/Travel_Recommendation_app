@@ -10,7 +10,8 @@ import os
 from .models import User, OTP
 from .serializers import (
     UserSerializer, SignupSerializer, LoginSerializer,
-    VerifyOTPSerializer, GoogleAuthSerializer
+    VerifyOTPSerializer, GoogleAuthSerializer,
+    ForgotPasswordSerializer, ResetPasswordSerializer
 )
 
 
@@ -83,6 +84,7 @@ def verify_otp(request):
             otp.save()
             
             user.is_verified = True
+            user.is_active = True
             user.save()
             
             # Generate tokens
@@ -262,5 +264,87 @@ def update_profile(request):
             'message': 'Profile updated successfully',
             'user': serializer.data
         }, status=status.HTTP_200_OK)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def forgot_password(request):
+    """
+    Forgot password endpoint
+    Sends OTP to user's email for password reset
+    """
+    serializer = ForgotPasswordSerializer(data=request.data)
+    if serializer.is_valid():
+        email = serializer.validated_data['email']
+        
+        try:
+            user = User.objects.get(email=email)
+            
+            # Create OTP for password reset
+            otp = OTP.create_otp(user, purpose='password_reset')
+            
+            return Response({
+                'message': 'Password reset OTP sent to your email',
+                'otp_code': otp.code,
+                'email': user.email
+            }, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            return Response({
+                'error': 'User with this email does not exist'
+            }, status=status.HTTP_404_NOT_FOUND)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def reset_password(request):
+    """
+    Reset password endpoint
+    Resets user password with OTP verification
+    """
+    serializer = ResetPasswordSerializer(data=request.data)
+    if serializer.is_valid():
+        email = serializer.validated_data['email']
+        code = serializer.validated_data['code']
+        new_password = serializer.validated_data['new_password']
+        
+        try:
+            user = User.objects.get(email=email)
+            otp = OTP.objects.filter(
+                user=user,
+                code=code,
+                is_used=False,
+                purpose='password_reset'
+            ).first()
+            
+            if not otp:
+                return Response({
+                    'error': 'Invalid OTP code'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not otp.is_valid():
+                return Response({
+                    'error': 'OTP has expired'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Mark OTP as used and reset password
+            otp.is_used = True
+            otp.save()
+            
+            user.set_password(new_password)
+            user.save()
+            
+            return Response({
+                'message': 'Password reset successfully'
+            }, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            return Response({
+                'error': 'User not found'
+            }, status=status.HTTP_404_NOT_FOUND)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

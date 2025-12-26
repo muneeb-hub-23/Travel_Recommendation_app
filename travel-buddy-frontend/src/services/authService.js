@@ -4,12 +4,21 @@ const API_URL = `${config.API_BASE_URL}/api/auth`;
 
 export const authService = {
   async signup(userData) {
+    const payload = {
+      email: userData.email,
+      password: userData.password,
+      confirm_password: userData.confirmPassword,
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      phone: userData.phone
+    };
+    
     const response = await fetch(`${API_URL}/signup/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(userData),
+      body: JSON.stringify(payload),
     });
     
     const data = await response.json();
@@ -130,5 +139,42 @@ export const authService = {
 
   getToken() {
     return localStorage.getItem('access_token');
+  },
+
+  async forgotPassword(email) {
+    const response = await fetch(`${API_URL}/forgot-password/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to send password reset code');
+    }
+    return data;
+  },
+
+  async resetPassword(email, code, newPassword, confirmPassword) {
+    const response = await fetch(`${API_URL}/reset-password/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        code,
+        new_password: newPassword,
+        confirm_password: confirmPassword
+      }),
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || Object.values(data)[0] || 'Password reset failed');
+    }
+    return data;
   }
 };

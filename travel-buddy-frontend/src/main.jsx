@@ -4,12 +4,11 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import './index.css'
 import 'sweetalert2/dist/sweetalert2.min.css'
 import App from './App.jsx'
-
-const GOOGLE_CLIENT_ID = import.meta.env.REACT_APP_GOOGLE_CLIENT_ID || 'your_google_client_id_here';
+import config from './config.js'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <GoogleOAuthProvider clientId={config.GOOGLE_CLIENT_ID}>
       <App />
     </GoogleOAuthProvider>
   </StrictMode>,

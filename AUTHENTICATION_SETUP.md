@@ -48,7 +48,7 @@ DB_PORT=3306
 
 # Google OAuth Configuration
 # Get your Client ID from: https://console.cloud.google.com/apis/credentials
-GOOGLE_CLIENT_ID=your_google_client_id_here.apps.googleusercontent.com
+GOOGLE_CLIENT_ID=922471186798-op26h57f277gcjuo5la4k5k3qjv6ppvo.apps.googleusercontent.com
 ```
 
 ### 3. Run Database Migrations

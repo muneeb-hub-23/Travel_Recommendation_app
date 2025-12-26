@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 
 
 class Destination(models.Model):
@@ -43,7 +43,7 @@ class Destination(models.Model):
 
 class UserPreference(models.Model):
     """Model for user travel preferences"""
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='preferences')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='preferences')
     preferred_categories = models.JSONField(default=list)
     budget_range = models.CharField(max_length=20, choices=[
         ('budget', 'Budget'),
@@ -103,7 +103,7 @@ class Hotel(models.Model):
 class Review(models.Model):
     """Model for destination reviews"""
     destination = models.ForeignKey(Destination, on_delete=models.CASCADE, related_name='reviews')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reviews')
     rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)])
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
