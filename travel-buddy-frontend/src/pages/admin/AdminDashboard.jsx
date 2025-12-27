@@ -29,6 +29,12 @@ const AdminDashboard = ({ admin, onLogout }) => {
   const [showViewHotelModal, setShowViewHotelModal] = useState(false);
   const [showEditHotelModal, setShowEditHotelModal] = useState(false);
   const [showAddHotelModal, setShowAddHotelModal] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [userSearch, setUserSearch] = useState('');
+  const [showAddAdminModal, setShowAddAdminModal] = useState(false);
+  const [showEditAdminModal, setShowEditAdminModal] = useState(false);
+  const [selectedAdmin, setSelectedAdmin] = useState(null);
 
   // Save active tab to localStorage whenever it changes
   useEffect(() => {
@@ -94,6 +100,50 @@ const AdminDashboard = ({ admin, onLogout }) => {
     };
 
     fetchHotels();
+  }, []);
+
+  // Fetch registered users from API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch(`${config.API_BASE_URL}/api/auth/users/`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUsers(Array.isArray(data) ? data : (data.results || []));
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        setUsers([]);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  // Fetch admin users from API
+  useEffect(() => {
+    const fetchAdminUsers = async () => {
+      try {
+        const response = await fetch(`${config.API_BASE_URL}/api/auth/admin-users/`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setAdminUsers(Array.isArray(data) ? data : (data.results || []));
+        }
+      } catch (error) {
+        console.error('Error fetching admin users:', error);
+        setAdminUsers([]);
+      }
+    };
+
+    fetchAdminUsers();
   }, []);
 
   const allReviews = [
@@ -340,9 +390,175 @@ const AdminDashboard = ({ admin, onLogout }) => {
     setShowEditHotelModal(false);
   };
 
+  // Admin User Handlers
+  const handleAddAdmin = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const adminData = {
+      name: formData.get('name'),
+      email: formData.get('email'),
+      username: formData.get('username'),
+      password: formData.get('password'),
+      role: formData.get('role')
+    };
+
+    try {
+      const response = await fetch(`${config.API_BASE_URL}/api/auth/admin-users/`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify(adminData)
+      });
+
+      if (response.ok) {
+        const newAdmin = await response.json();
+        setAdminUsers(prev => [...prev, newAdmin]);
+        setShowAddAdminModal(false);
+        
+        await Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: 'Admin user created successfully and can now login!',
+          confirmButtonColor: '#10b981',
+          timer: 2000
+        });
+      } else {
+        const error = await response.json();
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error.message || 'Failed to create admin user',
+          confirmButtonColor: '#ef4444'
+        });
+      }
+    } catch (error) {
+      console.error('Error creating admin:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to create admin user: ' + error.message,
+        confirmButtonColor: '#ef4444'
+      });
+    }
+  };
+
+  const handleEditAdmin = (admin) => {
+    setSelectedAdmin(admin);
+    setShowEditAdminModal(true);
+  };
+
+  const handleUpdateAdmin = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const updatedData = {
+      name: formData.get('name'),
+      email: formData.get('email'),
+      role: formData.get('role')
+    };
+
+    try {
+      const response = await fetch(`${config.API_BASE_URL}/api/auth/admin-users/${selectedAdmin.id}/`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify(updatedData)
+      });
+
+      if (response.ok) {
+        const updatedAdmin = await response.json();
+        setAdminUsers(prev => prev.map(admin => 
+          admin.id === updatedAdmin.id ? updatedAdmin : admin
+        ));
+        setShowEditAdminModal(false);
+        setSelectedAdmin(null);
+        
+        await Swal.fire({
+          icon: 'success',
+          title: 'Updated!',
+          text: 'Admin user updated successfully!',
+          confirmButtonColor: '#10b981',
+          timer: 2000
+        });
+      } else {
+        const error = await response.json();
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error.message || 'Failed to update admin user',
+          confirmButtonColor: '#ef4444'
+        });
+      }
+    } catch (error) {
+      console.error('Error updating admin:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to update admin user: ' + error.message,
+        confirmButtonColor: '#ef4444'
+      });
+    }
+  };
+
+  const handleDeleteAdmin = async (adminId) => {
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Are you sure?',
+      text: 'This will permanently delete this admin user!',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await fetch(`${config.API_BASE_URL}/api/auth/admin-users/${adminId}/`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          }
+        });
+
+        if (response.ok) {
+          setAdminUsers(prev => prev.filter(admin => admin.id !== adminId));
+          
+          await Swal.fire({
+            icon: 'success',
+            title: 'Deleted!',
+            text: 'Admin user has been deleted.',
+            confirmButtonColor: '#10b981',
+            timer: 2000
+          });
+        } else {
+          const error = await response.json();
+          await Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message || 'Failed to delete admin user',
+            confirmButtonColor: '#ef4444'
+          });
+        }
+      } catch (error) {
+        console.error('Error deleting admin:', error);
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to delete admin user: ' + error.message,
+          confirmButtonColor: '#ef4444'
+        });
+      }
+    }
+  };
+
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'users', label: 'Users', icon: Users },
+    { id: 'adminUsers', label: 'Admin Users', icon: Shield },
     { id: 'destinations', label: 'Destinations', icon: MapPin },
     { id: 'hotels', label: 'Hotels', icon: Hotel },
     { id: 'analytics', label: 'Analytics', icon: PieChart },
@@ -362,6 +578,13 @@ const AdminDashboard = ({ admin, onLogout }) => {
     hotel.name.toLowerCase().includes(hotelSearch.toLowerCase()) ||
     hotel.destination_name?.toLowerCase().includes(hotelSearch.toLowerCase()) ||
     hotel.address.toLowerCase().includes(hotelSearch.toLowerCase())
+  );
+
+  // Filter users based on search
+  const filteredUsers = users.filter(user =>
+    user.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+    user.email?.toLowerCase().includes(userSearch.toLowerCase()) ||
+    user.phone?.toLowerCase().includes(userSearch.toLowerCase())
   );
 
   return (
@@ -392,28 +615,12 @@ const AdminDashboard = ({ admin, onLogout }) => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <button className="relative p-2 hover:bg-gray-800 transition-colors">
-              <Bell className="h-5 w-5 text-white" />
-              <span className="absolute top-1 right-1 h-2 w-2 bg-white"></span>
-            </button>
-            
-            <div className="flex items-center space-x-3 px-4 py-2 bg-white">
-              <div className="h-8 w-8 bg-black flex items-center justify-center">
-                <span className="text-white text-sm font-semibold">
-                  {admin?.name?.charAt(0) || 'A'}
-                </span>
-              </div>
-              <div className="hidden md:block">
-                <p className="text-sm font-medium text-black">{admin?.name}</p>
-                <p className="text-xs text-gray-600">{admin?.role}</p>
-              </div>
-            </div>
-
             <button
               onClick={onLogout}
-              className="p-2 hover:bg-gray-800 transition-colors text-white"
+              className="px-4 py-2 bg-white text-black hover:bg-gray-200 transition-colors flex items-center space-x-2"
             >
               <LogOut className="h-5 w-5" />
+              <span className="hidden md:inline font-medium">Logout</span>
             </button>
           </div>
         </div>
@@ -564,92 +771,239 @@ const AdminDashboard = ({ admin, onLogout }) => {
             {activeTab === 'users' && (
               <div className="card p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-slate-800">User Management</h2>
-                  <button className="btn-primary flex items-center space-x-2">
-                    <Plus className="h-4 w-4" />
-                    <span>Add User</span>
-                  </button>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-800">Registered Users</h2>
+                    <p className="text-sm text-slate-600 mt-1">Total: <span className="font-bold text-primary-600">{users.length}</span> users</p>
+                  </div>
                 </div>
                 
-                <div className="mb-4 flex space-x-3">
-                  <div className="flex-1 relative">
+                <div className="mb-6">
+                  <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
                     <input
                       type="text"
-                      placeholder="Search users..."
-                      className="w-full pl-10 pr-4 py-2 border border-slate-300 focus:ring-2 focus:ring-black"
+                      placeholder="Search users by name, email, or phone..."
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
-                  <button className="px-4 py-2 border border-slate-300  hover:bg-slate-50 flex items-center space-x-2">
-                    <Filter className="h-4 w-4" />
-                    <span>Filter</span>
+                </div>
+
+                {users.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Users className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-600">No registered users yet</p>
+                  </div>
+                ) : filteredUsers.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Search className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-600">No users found matching your search</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-slate-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">User</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Email</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Phone</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Status</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Joined</th>
+                          <th className="px-4 py-3 text-right text-sm font-semibold text-slate-700">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {filteredUsers.map((user) => (
+                          <tr key={user.id} className="hover:bg-slate-50">
+                            <td className="px-4 py-4">
+                              <div className="flex items-center space-x-3">
+                                <div className="h-10 w-10 bg-black flex items-center justify-center">
+                                  <span className="text-white font-semibold">{user.name?.charAt(0) || 'U'}</span>
+                                </div>
+                                <div>
+                                  <p className="font-medium text-slate-800">{user.name || 'N/A'}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex items-center space-x-2 text-sm text-slate-600">
+                                <Mail className="h-4 w-4" />
+                                <span>{user.email || 'N/A'}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex items-center space-x-2 text-sm text-slate-600">
+                                <Phone className="h-4 w-4" />
+                                <span>{user.phone || 'N/A'}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              <span className="px-3 py-1 text-sm font-medium bg-black text-white">
+                                Active
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 text-sm text-slate-600">
+                              {user.date_joined ? new Date(user.date_joined).toLocaleDateString() : 'N/A'}
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex justify-end space-x-2">
+                                <button className="p-2 hover:bg-slate-100 transition-colors">
+                                  <Eye className="h-4 w-4 text-slate-600" />
+                                </button>
+                                <button className="p-2 hover:bg-slate-100 transition-colors">
+                                  <Trash2 className="h-4 w-4 text-red-600" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Admin Users Tab */}
+            {activeTab === 'adminUsers' && (
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-800">Admin Users Management</h2>
+                    <p className="text-sm text-slate-600 mt-1">Manage admin accounts and permissions</p>
+                  </div>
+                  <button 
+                    onClick={() => setShowAddAdminModal(true)}
+                    className="btn-primary flex items-center space-x-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Add Admin</span>
                   </button>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-slate-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">User</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Contact</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Trips</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Status</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Joined</th>
-                        <th className="px-4 py-3 text-right text-sm font-semibold text-slate-700">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200">
-                      {recentUsers.map((user) => (
-                        <tr key={user.id} className="hover:bg-slate-50">
-                          <td className="px-4 py-4">
-                            <div className="flex items-center space-x-3">
-                              <div className="h-10 w-10 bg-black flex items-center justify-center">
-                                <span className="text-white font-semibold">{user.name.charAt(0)}</span>
-                              </div>
-                              <div>
-                                <p className="font-medium text-slate-800">{user.name}</p>
-                                <p className="text-sm text-slate-500">{user.email}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4">
-                            <div className="flex items-center space-x-2 text-sm text-slate-600">
-                              <Phone className="h-4 w-4" />
-                              <span>{user.phone}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4">
-                            <span className="px-3 py-1 bg-gray-200 text-black text-sm font-medium">
-                              {user.trips} trips
-                            </span>
-                          </td>
-                          <td className="px-4 py-4">
-                            <span className={`px-3 py-1 text-sm font-medium ${
-                              user.status === 'active' 
-                                ? 'bg-black text-white' 
-                                : 'bg-gray-200 text-black'
-                            }`}>
-                              {user.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-sm text-slate-600">{user.joined}</td>
-                          <td className="px-4 py-4">
-                            <div className="flex justify-end space-x-2">
-                              <button className="p-2 hover:bg-slate-100 transition-colors">
-                                <Eye className="h-4 w-4 text-slate-600" />
-                              </button>
-                              <button className="p-2 hover:bg-slate-100 transition-colors">
-                                <Edit className="h-4 w-4 text-slate-600" />
-                              </button>
-                              <button className="p-2 hover:bg-slate-100 transition-colors">
-                                <Trash2 className="h-4 w-4 text-slate-600" />
-                              </button>
-                            </div>
-                          </td>
+                <div className="mb-6">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search admin users..."
+                      className="w-full pl-10 pr-4 py-3 border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {adminUsers.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Shield className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-600 mb-4">No admin users yet</p>
+                    <button className="btn-primary">
+                      Add Your First Admin
+                    </button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-slate-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Admin</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Email</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Role</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Status</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Last Login</th>
+                          <th className="px-4 py-3 text-right text-sm font-semibold text-slate-700">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {adminUsers.map((adminUser) => (
+                          <tr key={adminUser.id} className="hover:bg-slate-50">
+                            <td className="px-4 py-4">
+                              <div className="flex items-center space-x-3">
+                                <div className="h-10 w-10 bg-gradient-to-br from-black to-gray-700 flex items-center justify-center">
+                                  <Shield className="h-5 w-5 text-white" />
+                                </div>
+                                <div>
+                                  <p className="font-medium text-slate-800">{adminUser.name || adminUser.username}</p>
+                                  <p className="text-xs text-slate-500 flex items-center">
+                                    <Shield className="h-3 w-3 mr-1" />
+                                    Admin Access
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex items-center space-x-2 text-sm text-slate-600">
+                                <Mail className="h-4 w-4" />
+                                <span>{adminUser.email || 'N/A'}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              <span className="px-3 py-1 text-sm font-medium bg-gradient-to-r from-black to-gray-700 text-white">
+                                {adminUser.role || 'Admin'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4">
+                              <span className="px-3 py-1 text-sm font-medium bg-green-100 text-green-800">
+                                Active
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 text-sm text-slate-600">
+                              {adminUser.last_login ? new Date(adminUser.last_login).toLocaleDateString() : 'Never'}
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex justify-end space-x-2">
+                                <button 
+                                  onClick={() => handleEditAdmin(adminUser)}
+                                  className="p-2 hover:bg-slate-100 transition-colors" 
+                                  title="Edit"
+                                >
+                                  <Edit className="h-4 w-4 text-slate-600" />
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteAdmin(adminUser.id)}
+                                  className="p-2 hover:bg-slate-100 transition-colors" 
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-600" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Admin Stats */}
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-gradient-to-br from-black to-gray-700 p-4 text-white">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm opacity-90">Total Admins</p>
+                        <p className="text-2xl font-bold mt-1">{adminUsers.length}</p>
+                      </div>
+                      <Shield className="h-8 w-8 opacity-50" />
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-500 to-green-600 p-4 text-white">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm opacity-90">Active</p>
+                        <p className="text-2xl font-bold mt-1">{adminUsers.length}</p>
+                      </div>
+                      <Activity className="h-8 w-8 opacity-50" />
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-4 text-white">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm opacity-90">Super Admins</p>
+                        <p className="text-2xl font-bold mt-1">{adminUsers.filter(a => a.role === 'Super Admin').length}</p>
+                      </div>
+                      <Star className="h-8 w-8 opacity-50" />
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -1303,6 +1657,181 @@ const AdminDashboard = ({ admin, onLogout }) => {
           }}
           onHotelAdded={handleHotelUpdated}
         />
+      )}
+
+      {/* Add Admin Modal */}
+      {showAddAdminModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-slate-800">Add New Admin User</h2>
+              <button onClick={() => setShowAddAdminModal(false)} className="p-2 hover:bg-slate-100 rounded">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleAddAdmin} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Full Name *</label>
+                  <input
+                    type="text"
+                    name="name"
+                    required
+                    className="w-full px-4 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="John Doe"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Username *</label>
+                  <input
+                    type="text"
+                    name="username"
+                    required
+                    className="w-full px-4 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="johndoe"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Email Address *</label>
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  className="w-full px-4 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="admin@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Password *</label>
+                <input
+                  type="password"
+                  name="password"
+                  required
+                  minLength="8"
+                  className="w-full px-4 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Min. 8 characters"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Role *</label>
+                <select
+                  name="role"
+                  required
+                  className="w-full px-4 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="Admin">Admin</option>
+                  <option value="Super Admin">Super Admin</option>
+                  <option value="Moderator">Moderator</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-slate-200">
+                <button type="submit" className="flex-1 btn-primary py-3">
+                  <Shield className="h-5 w-5 inline mr-2" />
+                  Create Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddAdminModal(false)}
+                  className="px-6 py-3 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Admin Modal */}
+      {showEditAdminModal && selectedAdmin && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-slate-800">Edit Admin User</h2>
+              <button onClick={() => setShowEditAdminModal(false)} className="p-2 hover:bg-slate-100 rounded">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateAdmin} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Full Name *</label>
+                  <input
+                    type="text"
+                    name="name"
+                    required
+                    defaultValue={selectedAdmin.name}
+                    className="w-full px-4 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Username</label>
+                  <input
+                    type="text"
+                    defaultValue={selectedAdmin.username}
+                    disabled
+                    className="w-full px-4 py-2 border border-slate-300 rounded bg-slate-100 text-slate-500"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Username cannot be changed</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Email Address *</label>
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  defaultValue={selectedAdmin.email}
+                  className="w-full px-4 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Role *</label>
+                <select
+                  name="role"
+                  required
+                  defaultValue={selectedAdmin.role}
+                  className="w-full px-4 py-2 border border-slate-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="Admin">Admin</option>
+                  <option value="Super Admin">Super Admin</option>
+                  <option value="Moderator">Moderator</option>
+                </select>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded p-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> To change the password, the admin user should use the "Change Password" feature or reset it via email.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-slate-200">
+                <button type="submit" className="flex-1 btn-primary py-3">
+                  <Edit className="h-5 w-5 inline mr-2" />
+                  Update Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEditAdminModal(false)}
+                  className="px-6 py-3 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

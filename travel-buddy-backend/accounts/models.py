@@ -1,8 +1,37 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from django.contrib.auth.hashers import make_password, check_password
 import random
 import string
+
+
+class AdminUser(models.Model):
+    """Admin user model for dashboard access"""
+    username = models.CharField(max_length=150, unique=True)
+    password = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    email = models.EmailField(unique=True)
+    role = models.CharField(max_length=50, default='Admin')
+    is_active = models.BooleanField(default=True)
+    last_login = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'admin_users'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} ({self.username})"
+
+    def set_password(self, raw_password):
+        """Hash and set password"""
+        self.password = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        """Check password against hash"""
+        return check_password(raw_password, self.password)
 
 
 class User(AbstractUser):

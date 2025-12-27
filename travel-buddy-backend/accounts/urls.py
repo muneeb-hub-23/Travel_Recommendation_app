@@ -1,7 +1,8 @@
 from django.urls import path
-from . import views
+from . import views, admin_views
 
 urlpatterns = [
+    # Regular user endpoints
     path('signup/', views.signup, name='signup'),
     path('login/', views.login, name='login'),
     path('verify-otp/', views.verify_otp, name='verify_otp'),
@@ -11,4 +12,10 @@ urlpatterns = [
     path('reset-password/', views.reset_password, name='reset_password'),
     path('profile/', views.profile, name='profile'),
     path('profile/update/', views.update_profile, name='update_profile'),
+    
+    # Admin endpoints
+    path('users/', admin_views.list_users, name='list_users'),
+    path('admin-users/', admin_views.admin_users, name='admin_users'),
+    path('admin-users/<int:pk>/', admin_views.admin_user_detail, name='admin_user_detail'),
+    path('admin-login/', admin_views.admin_login, name='admin_login'),
 ]

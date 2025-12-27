@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import User, OTP
+from .models import User, OTP, AdminUser
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -98,4 +98,57 @@ class ResetPasswordSerializer(serializers.Serializer):
     def validate(self, data):
         if data['new_password'] != data['confirm_password']:
             raise serializers.ValidationError("Passwords do not match")
+        return data
+
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    """Serializer for AdminUser model"""
+    password = serializers.CharField(write_only=True, required=False)
+    
+    class Meta:
+        model = AdminUser
+        fields = ['id', 'username', 'name', 'email', 'role', 'is_active', 
+                  'last_login', 'created_at', 'password']
+        read_only_fields = ['id', 'created_at', 'last_login']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        admin_user = AdminUser(**validated_data)
+        admin_user.set_password(password)
+        admin_user.save()
+        return admin_user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance
+
+
+class AdminLoginSerializer(serializers.Serializer):
+    """Serializer for admin login"""
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        username = data.get('username')
+        password = data.get('password')
+
+        if username and password:
+            try:
+                admin_user = AdminUser.objects.get(username=username, is_active=True)
+                if not admin_user.check_password(password):
+                    raise serializers.ValidationError("Invalid credentials")
+            except AdminUser.DoesNotExist:
+                raise serializers.ValidationError("Invalid credentials")
+        else:
+            raise serializers.ValidationError("Must include username and password")
+
+        data['admin_user'] = admin_user
         return data
