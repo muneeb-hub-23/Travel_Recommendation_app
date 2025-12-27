@@ -7,11 +7,13 @@ import {
   Building2, Star, Plane, Bus, Bike, UtensilsCrossed, 
   Cloud, Sun, CloudRain, Search, TrendingUp, MapPin,
   Calendar, Clock, CheckCircle2, XCircle, AlertCircle,
-  Heart, Eye, Share2, Compass, Zap, ThumbsUp, Mic, MicOff, Languages
+  Heart, Eye, Share2, Compass, Zap, ThumbsUp, Mic, MicOff, Languages, Navigation
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
 const Home = ({ user, onLogout }) => {
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
@@ -650,15 +652,33 @@ const CategoryCard = ({ category, isSelected, onClick, delay }) => (
 );
 
 // Trending Card Component
-const TrendingCard = ({ destination, weatherLoading = {}, delay }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true }}
-    transition={{ delay }}
-    whileHover={{ y: -8 }}
-    className="bg-white border border-slate-200 overflow-hidden cursor-pointer"
-  >
+const TrendingCard = ({ destination, weatherLoading = {}, delay }) => {
+  const navigate = useNavigate();
+
+  const handlePlanTrip = (e) => {
+    e.stopPropagation();
+    navigate(`/plan-trip/${destination.id}`, { 
+      state: { 
+        destination: {
+          id: destination.id,
+          name: destination.name,
+          latitude: destination.latitude,
+          longitude: destination.longitude,
+          country: destination.country || destination.location
+        }
+      } 
+    });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay }}
+      whileHover={{ y: -8 }}
+      className="bg-white border border-slate-200 overflow-hidden cursor-pointer"
+    >
     <div className="relative h-48 overflow-hidden">
       {destination.image ? (
         <img 
@@ -766,16 +786,26 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => (
       
       {/* Best Season */}
       {destination.best_season && (
-        <div className="flex items-center space-x-2 text-xs">
+        <div className="flex items-center space-x-2 text-xs mb-3">
           <div className="flex items-center bg-white text-black border border-gray-300 px-2 py-1">
             <Calendar className="h-3 w-3 mr-1" />
             <span>Best: {destination.best_season}</span>
           </div>
         </div>
       )}
+
+      {/* Plan Trip Button */}
+      <button
+        onClick={handlePlanTrip}
+        className="w-full bg-black text-white py-2 px-4 font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center space-x-2"
+      >
+        <Navigation className="h-4 w-4" />
+        <span>Plan Trip</span>
+      </button>
     </div>
   </motion.div>
-);
+  );
+};
 
 // Hotel Card Component
 const HotelCard = ({ hotel, isSelected, onClick, delay }) => (
