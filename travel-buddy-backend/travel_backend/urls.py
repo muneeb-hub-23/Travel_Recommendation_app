@@ -25,6 +25,7 @@ urlpatterns = [
     path('api/accounts/', include('accounts.urls')),
     path('api/', include('recommendations.urls')),
     path('api/travel-rates/', include('travel_rates.urls')),
+    path('api/trips/', include('trips.urls')),
 ]
 
 if settings.DEBUG:

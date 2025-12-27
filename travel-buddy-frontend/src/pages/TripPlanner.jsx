@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
-import { Search, Navigation, MapPin, ArrowLeft, Loader, Car, Bus, Bike, PersonStanding } from 'lucide-react';
+import { Search, Navigation, MapPin, ArrowLeft, Loader, Car, Bus, Bike, PersonStanding, Coins, ArrowRight } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import Navbar from '../components/Navbar';
+import config from '../config';
 
 // Fix Leaflet default marker icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -67,6 +68,8 @@ const TripPlanner = ({ user, onLogout }) => {
   const [routeError, setRouteError] = useState(null);
   const [mapCenter, setMapCenter] = useState(hasValidCoordinates ? [destLat, destLon] : [30.3753, 69.3451]); // Pakistan center
   const [mapZoom, setMapZoom] = useState(hasValidCoordinates ? 8 : 6);
+  const [travelRates, setTravelRates] = useState({});
+  const [loadingRates, setLoadingRates] = useState(true);
 
   // Travel mode configurations (speed in km/h)
   const travelModes = {
@@ -74,6 +77,37 @@ const TripPlanner = ({ user, onLogout }) => {
     bus: { icon: Bus, label: 'Bus', speed: 40, color: '#f59e0b' },
     motorbike: { icon: Bike, label: 'Motor Bike', speed: 40, color: '#10b981' },
     walking: { icon: PersonStanding, label: 'Walking', speed: 5, color: '#8b5cf6' }
+  };
+
+  // Fetch travel rates on component mount
+  useEffect(() => {
+    const fetchTravelRates = async () => {
+      try {
+        const response = await fetch(`${config.API_BASE_URL}/api/travel-rates/`);
+        if (response.ok) {
+          const data = await response.json();
+          const ratesMap = {};
+          data.forEach(rate => {
+            ratesMap[rate.vehicle_type] = parseFloat(rate.rate_per_km);
+          });
+          setTravelRates(ratesMap);
+        }
+      } catch (error) {
+        console.error('Error fetching travel rates:', error);
+      } finally {
+        setLoadingRates(false);
+      }
+    };
+    fetchTravelRates();
+  }, []);
+
+  // Calculate round trip cost
+  const calculateRoundTripCost = () => {
+    if (!routeDistance && !distance) return null;
+    const distanceKm = routeDistance || distance;
+    const rate = travelRates[travelMode] || 0;
+    // Round trip = distance * 2
+    return (distanceKm * 2 * rate).toFixed(2);
   };
 
   // Calculate travel time based on distance and mode
@@ -513,6 +547,23 @@ const TripPlanner = ({ user, onLogout }) => {
                               ></div>
                             </div>
                           </div>
+                          {/* Estimated Round Trip Cost */}
+                          {!loadingRates && travelRates[travelMode] && travelMode !== 'walking' && (
+                            <div className="bg-green-50 border-2 border-green-400 rounded p-3 mt-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                  <Coins className="h-5 w-5 text-green-600" />
+                                  <span className="text-slate-700 font-medium">Round Trip Cost:</span>
+                                </div>
+                                <span className="font-bold text-xl text-green-900">
+                                  PKR {calculateRoundTripCost()}
+                                </span>
+                              </div>
+                              <p className="text-xs text-green-700 mt-1">
+                                Based on {travelRates[travelMode]} PKR/km × {((routeDistance || distance) * 2).toFixed(2)} km
+                              </p>
+                            </div>
+                          )}
                           {routeError ? (
                             <div className="bg-amber-50 border border-amber-300 rounded p-2 mt-2">
                               <p className="text-xs text-amber-800 font-semibold">⚠️ Using straight-line route</p>
@@ -523,6 +574,26 @@ const TripPlanner = ({ user, onLogout }) => {
                               {routeDistance && route && route.length > 10 ? '✓ Route follows actual roads' : '* Straight-line estimate'}
                             </p>
                           )}
+                          {/* Next Button */}
+                          <button
+                            onClick={() => {
+                              navigate('/trip-summary', {
+                                state: {
+                                  destination,
+                                  startLocation,
+                                  travelMode,
+                                  distance: routeDistance || distance,
+                                  duration: routeDuration,
+                                  travelCost: calculateRoundTripCost(),
+                                  ratePerKm: travelRates[travelMode]
+                                }
+                              });
+                            }}
+                            className="w-full mt-4 px-6 py-3 bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center space-x-2"
+                          >
+                            <span>Proceed to Trip Summary</span>
+                            <ArrowRight className="h-5 w-5" />
+                          </button>
                         </>
                       )}
                     </div>

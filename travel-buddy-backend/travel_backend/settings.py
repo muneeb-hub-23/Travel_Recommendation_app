@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'accounts',
     'recommendations',
     'travel_rates',
+    'trips',
 ]
 
 MIDDLEWARE = [

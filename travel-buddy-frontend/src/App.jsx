@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import TripPlanner from './pages/TripPlanner';
+import TripSummary from './pages/TripSummary';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminLogin from './pages/admin/AdminLogin';
 import Overview from './pages/admin/Overview';
@@ -65,6 +66,7 @@ function App() {
         <Route path="/signup" element={<Signup onSignup={handleLogin} />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/plan-trip/:destinationId" element={<TripPlanner user={user} onLogout={handleLogout} />} />
+        <Route path="/trip-summary" element={<TripSummary user={user} onLogout={handleLogout} />} />
         
         <Route path="/admin/login" element={<AdminLogin onLogin={handleAdminLogin} />} />
         <Route 

@@ -659,13 +659,7 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => {
     e.stopPropagation();
     navigate(`/plan-trip/${destination.id}`, { 
       state: { 
-        destination: {
-          id: destination.id,
-          name: destination.name,
-          latitude: destination.latitude,
-          longitude: destination.longitude,
-          country: destination.country || destination.location
-        }
+        destination: destination
       } 
     });
   };

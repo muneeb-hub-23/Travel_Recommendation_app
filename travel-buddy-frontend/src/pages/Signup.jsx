@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, Phone, CheckCircle } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { GoogleLogin } from '@react-oauth/google';
@@ -22,6 +22,8 @@ const Signup = ({ onSignup }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || '/';
 
   const handleChange = (e) => {
     setFormData({
@@ -117,7 +119,7 @@ const Signup = ({ onSignup }) => {
       });
 
       onSignup(response.user);
-      navigate('/');
+      navigate(returnTo);
     } catch (error) {
       await Swal.fire({
         icon: 'error',

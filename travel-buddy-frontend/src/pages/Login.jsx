@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { GoogleLogin } from '@react-oauth/google';
@@ -14,6 +14,8 @@ const Login = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,7 +59,7 @@ const Login = ({ onLogin }) => {
           showConfirmButton: false
         });
         onLogin(response.user);
-        navigate('/');
+        navigate(returnTo);
       }
     } catch (error) {
       await Swal.fire({
@@ -95,7 +97,7 @@ const Login = ({ onLogin }) => {
       });
 
       onLogin(response.user);
-      navigate('/');
+      navigate(returnTo);
     } catch (error) {
       await Swal.fire({
         icon: 'error',
