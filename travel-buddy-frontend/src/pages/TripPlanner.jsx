@@ -64,7 +64,6 @@ const TripPlanner = ({ user, onLogout }) => {
   const [routeDuration, setRouteDuration] = useState(null); // Actual route duration
   const [travelMode, setTravelMode] = useState('car');
   const [isLoadingRoute, setIsLoadingRoute] = useState(false);
-  const [showTraffic, setShowTraffic] = useState(false);
   const [routeError, setRouteError] = useState(null);
   const [mapCenter, setMapCenter] = useState(hasValidCoordinates ? [destLat, destLon] : [30.3753, 69.3451]); // Pakistan center
   const [mapZoom, setMapZoom] = useState(hasValidCoordinates ? 8 : 6);
@@ -73,7 +72,7 @@ const TripPlanner = ({ user, onLogout }) => {
   const travelModes = {
     car: { icon: Car, label: 'Car', speed: 60, color: '#3b82f6' },
     bus: { icon: Bus, label: 'Bus', speed: 40, color: '#f59e0b' },
-    bike: { icon: Bike, label: 'Bike', speed: 15, color: '#10b981' },
+    motorbike: { icon: Bike, label: 'Motor Bike', speed: 40, color: '#10b981' },
     walking: { icon: PersonStanding, label: 'Walking', speed: 5, color: '#8b5cf6' }
   };
 
@@ -113,7 +112,7 @@ const TripPlanner = ({ user, onLogout }) => {
     
     try {
       // OSRM profile mapping
-      const osrmProfile = mode === 'car' || mode === 'bus' ? 'car' : mode === 'bike' ? 'bike' : 'foot';
+      const osrmProfile = mode === 'car' || mode === 'bus' || mode === 'motorbike' ? 'car' : 'foot';
       
       // OSRM public API endpoint
       const url = `https://router.project-osrm.org/route/v1/${osrmProfile}/${startLon},${startLat};${endLon},${endLat}?overview=full&geometries=geojson`;
@@ -137,10 +136,22 @@ const TripPlanner = ({ user, onLogout }) => {
         // Duration in seconds from OSRM
         let durationSec = route.duration;
         
-        // Adjust duration for bus (OSRM uses car profile for both)
-        // Buses are typically 30-40% slower than cars due to stops
+        // Adjust duration based on travel mode
+        // OSRM often returns similar times for all modes in some regions
+        // so we apply realistic multipliers based on average speeds
         if (mode === 'bus') {
-          durationSec = durationSec * 1.5; // 50% more time for bus
+          // Buses are typically 30-50% slower than cars due to stops
+          durationSec = durationSec * 1.5;
+        } else if (mode === 'motorbike') {
+          // Motorbikes can be slightly faster in traffic but slower on highways
+          // Average ~40 km/h in mixed conditions, similar to bus
+          durationSec = durationSec * 1.2; // 20% more time than car
+        } else if (mode === 'walking') {
+          // Walking averages 5 km/h vs cars at 50-60 km/h
+          const walkSpeedKmh = 5;
+          const carSpeedKmh = 60;
+          const speedRatio = carSpeedKmh / walkSpeedKmh; // ~12x
+          durationSec = durationSec * speedRatio;
         }
         
         console.log('OSRM Route:', {
@@ -278,11 +289,19 @@ const TripPlanner = ({ user, onLogout }) => {
   useEffect(() => {
     if (startLocation && destination && hasValidCoordinates) {
       console.log('=== Travel mode changed to:', travelMode, '===');
+      console.log('Current start location:', startLocation);
+      console.log('Current destination:', destLat, destLon);
+      
       // Clear existing route data to force refresh
       setRoute(null);
       setRouteDuration(null);
-      // Fetch new route with updated mode
-      fetchRoadRoute(startLocation.lat, startLocation.lon, destLat, destLon, travelMode);
+      setRouteDistance(null);
+      setRouteError(null);
+      
+      // Small delay to ensure state clears before refetch
+      setTimeout(() => {
+        fetchRoadRoute(startLocation.lat, startLocation.lon, destLat, destLon, travelMode);
+      }, 50);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [travelMode]);
@@ -515,43 +534,17 @@ const TripPlanner = ({ user, onLogout }) => {
 
           {/* Map */}
           <div className="lg:col-span-2">
-            <div className="bg-white border border-slate-200 overflow-hidden h-[600px] relative">
-              {/* Traffic Toggle Button */}
-              <div className="absolute top-4 right-4 z-[1000]">
-                <button
-                  onClick={() => setShowTraffic(!showTraffic)}
-                  className={`px-4 py-2 font-semibold shadow-lg transition-all ${
-                    showTraffic
-                      ? 'bg-red-600 text-white hover:bg-red-700'
-                      : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-300'
-                  }`}
-                  title={showTraffic ? 'Hide traffic layer' : 'Show traffic layer'}
-                >
-                  {showTraffic ? '🚦 Traffic ON' : '🚦 Traffic OFF'}
-                </button>
-              </div>
-
+            <div className="bg-white border border-slate-200 overflow-hidden h-[600px] relative z-0">
               <MapContainer
                 center={mapCenter}
                 zoom={mapZoom}
                 style={{ height: '100%', width: '100%' }}
                 key={`${mapCenter[0]}-${mapCenter[1]}-${mapZoom}`}
               >
-                {/* Base Map Layer */}
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                
-                {/* Traffic Layer Overlay */}
-                {showTraffic && (
-                  <TileLayer
-                    url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    opacity={0.3}
-                    attribution='Traffic data'
-                  />
-                )}
-                
                 <ChangeView center={mapCenter} zoom={mapZoom} />
                 
                 {/* Start Location Marker */}
@@ -597,7 +590,7 @@ const TripPlanner = ({ user, onLogout }) => {
                       color={travelModes[travelMode].color}
                       weight={4}
                       opacity={0.8}
-                      dashArray={travelMode === 'walking' ? "5, 10" : travelMode === 'bike' ? "10, 5" : ""}
+                      dashArray={travelMode === 'walking' ? "5, 10" : travelMode === 'motorbike' ? "10, 5" : ""}
                     />
                   </>
                 )}
