@@ -12,6 +12,7 @@ import Users from './pages/admin/Users';
 import AdminUsers from './pages/admin/AdminUsers';
 import Destinations from './pages/admin/Destinations';
 import Hotels from './pages/admin/Hotels';
+import TravelRates from './pages/admin/TravelRates';
 import Analytics from './pages/admin/Analytics';
 import Reviews from './pages/admin/Reviews';
 import Settings from './pages/admin/Settings';
@@ -80,6 +81,7 @@ function App() {
           <Route path="admin-users" element={<AdminUsers />} />
           <Route path="destinations" element={<Destinations />} />
           <Route path="hotels" element={<Hotels />} />
+          <Route path="travel-rates" element={<TravelRates />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="reviews" element={<Reviews />} />
           <Route path="settings" element={<Settings />} />

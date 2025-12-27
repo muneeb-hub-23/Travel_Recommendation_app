@@ -3,23 +3,17 @@ Database and Server Configuration
 This file contains MySQL database configuration and server settings.
 """
 
-import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
-
 
 class DatabaseConfig:
     """MySQL Database Configuration"""
     
     # MySQL Database Settings
-    DB_ENGINE = os.getenv('DB_ENGINE', 'django.db.backends.mysql')
-    DB_NAME = os.getenv('DB_NAME', 'travel_recommendation_db')
-    DB_USER = os.getenv('DB_USER', 'root')
-    DB_PASSWORD = os.getenv('DB_PASSWORD', '')
-    DB_HOST = os.getenv('DB_HOST', 'localhost')
-    DB_PORT = os.getenv('DB_PORT', '3306')
+    DB_ENGINE = 'django.db.backends.mysql'
+    DB_NAME = 'travel_buddy'
+    DB_USER = 'root'
+    DB_PASSWORD = 'root'
+    DB_HOST = 'localhost'
+    DB_PORT = '3306'
     
     # Additional MySQL Options
     DB_OPTIONS = {
@@ -45,12 +39,12 @@ class ServerConfig:
     """Server Configuration"""
     
     # Server Settings
-    SERVER_HOST = os.getenv('SERVER_HOST', '127.0.0.1')
-    SERVER_PORT = os.getenv('SERVER_PORT', '8000')
+    SERVER_HOST = '127.0.0.1'
+    SERVER_PORT = '4000'
     
     # API Settings
-    API_VERSION = os.getenv('API_VERSION', 'v1')
-    API_TITLE = os.getenv('API_TITLE', 'Travel Recommendation API')
+    API_VERSION = 'v1'
+    API_TITLE = 'Travel Recommendation API'
     
     @classmethod
     def get_server_url(cls):
@@ -62,19 +56,24 @@ class AppConfig:
     """Application-wide Configuration"""
     
     # Django Settings
-    SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production')
-    DEBUG = os.getenv('DEBUG', 'True') == 'True'
-    ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+    SECRET_KEY = 'your-secret-key-here'
+    DEBUG = True
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
     
     # CORS Settings
-    CORS_ALLOWED_ORIGINS = os.getenv(
-        'CORS_ALLOWED_ORIGINS',
-        'http://localhost:3000,http://127.0.0.1:3000'
-    ).split(',')
+    CORS_ALLOWED_ORIGINS = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173'
+    ]
     
     # Media and Static Files
-    MEDIA_ROOT_PATH = os.getenv('MEDIA_ROOT', 'media')
-    STATIC_ROOT_PATH = os.getenv('STATIC_ROOT', 'staticfiles')
+    MEDIA_ROOT_PATH = 'media'
+    STATIC_ROOT_PATH = 'staticfiles'
+    
+    # Google OAuth
+    GOOGLE_CLIENT_ID = '922471186798-op26h57f277gcjuo5la4k5k3qjv6ppvo.apps.googleusercontent.com'
 
 
 # Create singleton instances for easy import

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Users, MapPin, Hotel, Settings, LogOut, Menu, X, BarChart3,
-  PieChart, MessageSquare, Shield
+  PieChart, MessageSquare, Shield, Coins
 } from 'lucide-react';
 
 const AdminLayout = ({ admin, onLogout }) => {
@@ -37,6 +37,7 @@ const AdminLayout = ({ admin, onLogout }) => {
     { id: 'adminUsers', label: 'Admin Users', icon: Shield, path: '/admin/admin-users' },
     { id: 'destinations', label: 'Destinations', icon: MapPin, path: '/admin/destinations' },
     { id: 'hotels', label: 'Hotels', icon: Hotel, path: '/admin/hotels' },
+    { id: 'travelRates', label: 'Travel Rates', icon: Coins, path: '/admin/travel-rates' },
     { id: 'analytics', label: 'Analytics', icon: PieChart, path: '/admin/analytics' },
     { id: 'reviews', label: 'Reviews', icon: MessageSquare, path: '/admin/reviews' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' },
