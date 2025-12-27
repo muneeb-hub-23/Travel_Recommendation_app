@@ -1,14 +1,19 @@
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.authentication import TokenAuthentication
 from django.utils import timezone
+import jwt
+from datetime import datetime, timedelta
+from django.conf import settings
 from .models import User, AdminUser
 from .serializers import UserSerializer, AdminUserSerializer, AdminLoginSerializer
 
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+@authentication_classes([])
 def list_users(request):
     """
     List all registered users
@@ -21,6 +26,7 @@ def list_users(request):
 
 @api_view(['GET', 'POST'])
 @permission_classes([AllowAny])
+@authentication_classes([])
 def admin_users(request):
     """
     GET: List all admin users
@@ -44,6 +50,7 @@ def admin_users(request):
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([AllowAny])
+@authentication_classes([])
 def admin_user_detail(request, pk):
     """
     GET: Retrieve admin user details
@@ -79,10 +86,11 @@ def admin_user_detail(request, pk):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@authentication_classes([])
 def admin_login(request):
     """
     Admin login endpoint
-    Authenticates admin user and returns token
+    Authenticates admin user and returns JWT token
     """
     serializer = AdminLoginSerializer(data=request.data)
     if serializer.is_valid():
@@ -92,11 +100,22 @@ def admin_login(request):
         admin_user.last_login = timezone.now()
         admin_user.save()
         
-        # Generate simple token (you can use JWT if needed)
+        # Generate JWT token for admin
+        payload = {
+            'admin_id': admin_user.id,
+            'username': admin_user.username,
+            'role': admin_user.role,
+            'exp': datetime.utcnow() + timedelta(days=1),
+            'iat': datetime.utcnow(),
+            'type': 'admin'
+        }
+        
+        token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+        
         return Response({
             'message': 'Login successful',
             'admin': AdminUserSerializer(admin_user).data,
-            'token': f'admin_token_{admin_user.id}'
+            'token': token
         }, status=status.HTTP_200_OK)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
