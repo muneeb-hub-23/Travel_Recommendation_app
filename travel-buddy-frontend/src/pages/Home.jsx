@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import useVoiceInput from '../hooks/useVoiceInput';
 import { motion } from 'framer-motion';
 import config from '../config';
+import Swal from 'sweetalert2';
 import { 
   Send, Sparkles, Mountain, Palmtree, Snowflake, Waves, 
   Building2, Star, Plane, Bus, Bike, UtensilsCrossed, 
   Cloud, Sun, CloudRain, Search, TrendingUp, MapPin,
   Calendar, Clock, CheckCircle2, XCircle, AlertCircle,
-  Heart, Eye, Share2, Compass, Zap, ThumbsUp, Mic, MicOff, Languages, Navigation
+  Heart, Eye, Share2, Compass, Zap, ThumbsUp, Mic, MicOff, Languages, Navigation,
+  ChevronDown, ChevronUp, DollarSign, Hotel, Car, X, Info
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
@@ -26,6 +28,10 @@ const Home = ({ user, onLogout }) => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchSummary, setSearchSummary] = useState('');
   const [weatherLoading, setWeatherLoading] = useState({});
+  const [myTrips, setMyTrips] = useState([]);
+  const [tripsLoading, setTripsLoading] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState(null);
+  const [reviewTrip, setReviewTrip] = useState(null);
 
   // Voice input hook
   const { isListening, isSupported, toggleListening, changeLanguage } = useVoiceInput(
@@ -198,57 +204,87 @@ const Home = ({ user, onLogout }) => {
   // Get trending destinations (top rated)
   const trendingDestinations = destinations.slice(0, 3);
 
-  // User's trips
-  const myTrips = [
-    { 
-      id: 1, 
-      destination: 'Hunza Valley', 
-      location: 'Gilgit-Baltistan',
-      image: 'https://images.unsplash.com/photo-1589308078059-be1415eab4c3?w=400',
-      startDate: '2024-12-20',
-      endDate: '2024-12-25',
-      status: 'upcoming',
-      days: 5,
-      category: 'Mountain',
-      budget: '₨ 45,000'
-    },
-    { 
-      id: 2, 
-      destination: 'Swat Valley', 
-      location: 'Khyber Pakhtunkhwa',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-      startDate: '2024-11-15',
-      endDate: '2024-11-18',
-      status: 'completed',
-      days: 3,
-      category: 'Valley',
-      budget: '₨ 32,000'
-    },
-    { 
-      id: 3, 
-      destination: 'Murree Hills', 
-      location: 'Punjab',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-      startDate: '2024-10-10',
-      endDate: '2024-10-12',
-      status: 'completed',
-      days: 2,
-      category: 'Hill Station',
-      budget: '₨ 18,000'
-    },
-    { 
-      id: 4, 
-      destination: 'Naran Kaghan', 
-      location: 'Khyber Pakhtunkhwa',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-      startDate: '2024-09-05',
-      endDate: '2024-09-08',
-      status: 'cancelled',
-      days: 3,
-      category: 'Mountain',
-      budget: '₨ 28,000'
-    },
-  ];
+  // Fetch user's trips
+  useEffect(() => {
+    const fetchUserTrips = async () => {
+      if (!user || !user.id) return;
+      
+      setTripsLoading(true);
+      try {
+        const response = await fetch(
+          `${config.API_BASE_URL}/api/trips/user/?user_id=${user.id}`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Transform backend data to frontend format
+          const formattedTrips = data.map(trip => {
+            // Calculate number of days
+            const startDate = new Date(trip.departure_date);
+            const endDate = trip.return_date ? new Date(trip.return_date) : startDate;
+            const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) || 1;
+            
+            // Determine status dynamically based on dates
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const tripStart = new Date(trip.departure_date);
+            tripStart.setHours(0, 0, 0, 0);
+            const tripEnd = new Date(trip.return_date);
+            tripEnd.setHours(0, 0, 0, 0);
+            
+            let status;
+            if (trip.status === 'cancelled') {
+              status = 'cancelled';
+            } else if (today >= tripStart && today <= tripEnd) {
+              status = 'ongoing';
+            } else if (today < tripStart) {
+              status = 'upcoming';
+            } else {
+              status = 'completed';
+            }
+            
+            // Get the actual destination image URL
+            let imageUrl = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400';
+            
+            // Backend returns 'image' field in destination_details
+            if (trip.destination_details?.image) {
+              // Check if it's a relative URL and prepend API_BASE_URL
+              imageUrl = trip.destination_details.image.startsWith('http') 
+                ? trip.destination_details.image 
+                : `${config.API_BASE_URL}${trip.destination_details.image}`;
+            }
+            
+            return {
+              id: trip.id,
+              destination: trip.destination_details?.name || 'Unknown Destination',
+              location: trip.destination_details?.location || '',
+              image: imageUrl,
+              startDate: trip.departure_date,
+              endDate: trip.return_date,
+              status: status,
+              days: days,
+              category: trip.destination_details?.category || 'Travel',
+              budget: `₨ ${trip.total_cost ? parseFloat(trip.total_cost).toLocaleString() : '0'}`,
+              travel_mode: trip.travel_mode_display || trip.travel_mode,
+              // Store full trip data for modal
+              fullData: trip
+            };
+          });
+          
+          setMyTrips(formattedTrips);
+        } else {
+          console.error('Failed to fetch trips:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching user trips:', error);
+      } finally {
+        setTripsLoading(false);
+      }
+    };
+    
+    fetchUserTrips();
+  }, [user]);
 
   // Explore destinations - all available destinations
   const exploreDestinations = destinations;
@@ -448,11 +484,29 @@ const Home = ({ user, onLogout }) => {
         {/* My Trips Section - Only for logged-in users */}
         {user && (
           <Section title="My Trips" icon={MapPin}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {myTrips.map((trip, index) => (
-                <MyTripCard key={trip.id} trip={trip} delay={index * 0.1} />
-              ))}
-            </div>
+            {tripsLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+              </div>
+            ) : myTrips.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {myTrips.map((trip, index) => (
+                  <MyTripCard 
+                    key={trip.id} 
+                    trip={trip} 
+                    delay={index * 0.1} 
+                    onViewDetails={() => setSelectedTrip(trip)}
+                    onReview={() => setReviewTrip(trip)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <MapPin className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-600 text-lg mb-2">No trips yet</p>
+                <p className="text-slate-500 text-sm">Start planning your next adventure!</p>
+              </div>
+            )}
           </Section>
         )}
 
@@ -597,6 +651,16 @@ const Home = ({ user, onLogout }) => {
           </Section>
         )}
       </div>
+
+      {/* Trip Detail Modal */}
+      {selectedTrip && (
+        <TripDetailModal trip={selectedTrip} onClose={() => setSelectedTrip(null)} />
+      )}
+
+      {/* Review Modal */}
+      {reviewTrip && (
+        <ReviewModal trip={reviewTrip} onClose={() => setReviewTrip(null)} user={user} />
+      )}
     </div>
   );
 };
@@ -685,9 +749,10 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => {
           <MapPin className="h-16 w-16 text-gray-400 opacity-50" />
         </div>
       )}
-      <div className="absolute top-3 right-3 bg-white px-3 py-1 flex items-center space-x-1">
+      <div className="absolute top-3 right-3 bg-white px-2 py-1 flex items-center space-x-1">
         <Star className="h-4 w-4 text-black fill-black" />
         <span className="text-sm font-semibold text-black">{destination.rating || destination.average_rating || '0.0'}</span>
+        <span className="text-xs text-gray-600">({destination.review_count || 0})</span>
       </div>
       {destination.category && (
         <div className="absolute top-3 left-3 bg-black px-3 py-1">
@@ -890,15 +955,19 @@ const WeatherCard = ({ weather, delay }) => (
 );
 
 // My Trip Card Component
-const MyTripCard = ({ trip, delay }) => {
+const MyTripCard = ({ trip, delay, onViewDetails, onReview }) => {
   const statusConfig = {
-    upcoming: { icon: Clock, color: 'from-blue-500 to-cyan-500', bg: 'bg-blue-100', text: 'text-blue-700', label: 'Upcoming' },
-    completed: { icon: CheckCircle2, color: 'from-green-500 to-emerald-500', bg: 'bg-green-100', text: 'text-green-700', label: 'Completed' },
-    cancelled: { icon: XCircle, color: 'from-red-500 to-pink-500', bg: 'bg-red-100', text: 'text-red-700', label: 'Cancelled' },
+    upcoming: { icon: Clock, label: 'Upcoming' },
+    planned: { icon: Clock, label: 'Planned' },
+    ongoing: { icon: AlertCircle, label: 'Ongoing' },
+    completed: { icon: CheckCircle2, label: 'Completed' },
+    cancelled: { icon: XCircle, label: 'Cancelled' },
   };
   
   const config = statusConfig[trip.status];
-  const StatusIcon = config.icon;
+  const StatusIcon = config?.icon || Clock;
+  // Allow all users to review completed/ongoing trips
+  const canReview = (trip.status === 'completed' || trip.status === 'ongoing') && onReview;
 
   return (
     <motion.div
@@ -908,12 +977,19 @@ const MyTripCard = ({ trip, delay }) => {
       transition={{ delay }}
       whileHover={{ y: -8 }}
       className="card overflow-hidden cursor-pointer"
+      onClick={onViewDetails}
     >
       <div className="relative h-40 overflow-hidden">
         <img src={trip.image} alt={trip.destination} className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" />
-        <div className={`absolute top-3 right-3 ${config.bg} backdrop-blur-sm px-3 py-1 rounded-full flex items-center space-x-1`}>
-          <StatusIcon className={`h-4 w-4 ${config.text}`} />
-          <span className={`text-xs font-semibold ${config.text}`}>{config.label}</span>
+        {/* Status Badge - Black and White */}
+        <div className="absolute top-3 left-3 bg-black px-3 py-1 flex items-center space-x-1">
+          <StatusIcon className="h-3 w-3 text-white" />
+          <span className="text-xs font-medium text-white">{config?.label}</span>
+        </div>
+        {/* Days Badge */}
+        <div className="absolute top-3 right-3 bg-white px-3 py-1 flex items-center space-x-1">
+          <Clock className="h-3 w-3 text-black" />
+          <span className="text-xs font-semibold text-black">{trip.days} days</span>
         </div>
       </div>
       <div className="p-4">
@@ -922,23 +998,430 @@ const MyTripCard = ({ trip, delay }) => {
           <MapPin className="h-3 w-3 mr-1" />
           {trip.location}
         </p>
-        <div className="flex items-center justify-between text-sm mb-2">
-          <div className="flex items-center text-slate-600">
-            <Calendar className="h-4 w-4 mr-1" />
-            <span>{new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+        
+        {/* Trip Details Box */}
+        <div className="bg-gray-100 p-3 mb-3 border border-gray-300">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-700">Start Date:</span>
+            <span className="text-xs font-semibold text-black">{new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           </div>
-          <span className="text-slate-500">•</span>
-          <div className="flex items-center text-slate-600">
-            <Clock className="h-4 w-4 mr-1" />
-            <span>{trip.days} days</span>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-700">Category:</span>
+            <span className="text-xs font-semibold text-black">{trip.category}</span>
           </div>
         </div>
-        <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-          <span className="text-sm text-slate-600">{trip.category}</span>
-          <span className="text-sm font-semibold text-primary-600">{trip.budget}</span>
+        
+        <div className="flex items-center justify-between pt-3 border-t border-gray-300">
+          <span className="text-sm font-bold text-black">Total Budget:</span>
+          <span className="text-sm font-bold text-black">{trip.budget}</span>
+        </div>
+        
+        {/* Action Buttons */}
+        <div className={`flex items-center justify-center mt-3 pt-3 border-t border-gray-300 ${canReview ? 'space-x-2' : ''}`}>
+          <button 
+            className="text-black text-sm font-medium flex items-center hover:text-gray-700 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewDetails();
+            }}
+          >
+            <span>View Details</span>
+            <Info className="h-4 w-4 ml-1" />
+          </button>
+          
+          {canReview && (
+            <button 
+              className="bg-black text-white text-sm font-medium px-3 py-1 hover:bg-gray-800 transition-colors flex items-center"
+              onClick={(e) => {
+                e.stopPropagation();
+                onReview();
+              }}
+            >
+              <Star className="h-4 w-4 mr-1" />
+              <span>Review</span>
+            </button>
+          )}
         </div>
       </div>
     </motion.div>
+  );
+};
+
+// Trip Detail Modal Component
+const TripDetailModal = ({ trip, onClose }) => {
+  if (!trip) return null;
+
+  const statusConfig = {
+    upcoming: { icon: Clock, color: 'from-blue-500 to-cyan-500', bg: 'bg-blue-100', text: 'text-blue-700', label: 'Upcoming' },
+    planned: { icon: Clock, color: 'from-blue-500 to-cyan-500', bg: 'bg-blue-100', text: 'text-blue-700', label: 'Planned' },
+    ongoing: { icon: AlertCircle, color: 'from-orange-500 to-amber-500', bg: 'bg-orange-100', text: 'text-orange-700', label: 'Ongoing' },
+    completed: { icon: CheckCircle2, color: 'from-green-500 to-emerald-500', bg: 'bg-green-100', text: 'text-green-700', label: 'Completed' },
+    cancelled: { icon: XCircle, color: 'from-red-500 to-pink-500', bg: 'bg-red-100', text: 'text-red-700', label: 'Cancelled' },
+  };
+
+  const travelModeIcons = {
+    'Car': Car,
+    'car': Car,
+    'Bus': Bus,
+    'bus': Bus,
+    'Motorbike': Bike,
+    'motorbike': Bike,
+    'Walking': Navigation,
+    'walking': Navigation,
+  };
+
+  const config = statusConfig[trip.status];
+  const StatusIcon = config?.icon || Clock;
+  const TravelIcon = travelModeIcons[trip.travel_mode] || Car;
+  
+  const fullData = trip.fullData || {};
+  const destination = fullData.destination_details || {};
+  const hotel = fullData.hotel_details || {};
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header with Image */}
+        <div className="relative h-64 overflow-hidden">
+          <img src={trip.image} alt={trip.destination} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 bg-white/90 hover:bg-white rounded-full p-2 transition-colors"
+          >
+            <X className="h-5 w-5 text-slate-800" />
+          </button>
+          <div className="absolute bottom-4 left-6 text-white">
+            <h2 className="text-3xl font-bold mb-2">{trip.destination}</h2>
+            <p className="flex items-center text-white/90">
+              <MapPin className="h-4 w-4 mr-2" />
+              {trip.location}
+            </p>
+          </div>
+          <div className="absolute top-4 left-4 bg-black px-4 py-2 flex items-center space-x-2">
+            <StatusIcon className="h-5 w-5 text-white" />
+            <span className="font-semibold text-white">{config?.label}</span>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="overflow-y-auto max-h-[calc(90vh-16rem)] p-6">
+          {/* Trip Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-gray-100 p-4 border border-gray-300">
+              <Calendar className="h-8 w-8 text-black mb-2" />
+              <p className="text-sm text-gray-700 mb-1">Start Date</p>
+              <p className="font-semibold text-black">
+                {new Date(trip.startDate).toLocaleDateString('en-US', { 
+                  year: 'numeric',
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </p>
+            </div>
+            <div className="bg-gray-100 p-4 border border-gray-300">
+              <Clock className="h-8 w-8 text-black mb-2" />
+              <p className="text-sm text-gray-700 mb-1">Duration</p>
+              <p className="font-semibold text-black">{trip.days} day{trip.days !== 1 ? 's' : ''}</p>
+            </div>
+            <div className="bg-gray-100 p-4 border border-gray-300">
+              <p className="text-sm text-gray-700 mb-1">Total Budget</p>
+              <p className="font-bold text-black text-lg">{trip.budget}</p>
+            </div>
+          </div>
+
+          {/* Destination Details */}
+          {destination.name && (
+            <div className="mb-6">
+              <h3 className="text-xl font-bold text-black mb-3 flex items-center">
+                <Mountain className="h-6 w-6 mr-2 text-black" />
+                Destination Details
+              </h3>
+              <div className="bg-gray-100 p-4 border border-gray-300 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-700">Name</span>
+                  <span className="font-semibold text-black">{destination.name}</span>
+                </div>
+                {destination.category && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">Category</span>
+                    <span className="font-semibold text-black">{destination.category}</span>
+                  </div>
+                )}
+                {destination.description && (
+                  <div className="pt-2 border-t border-gray-300">
+                    <p className="text-sm text-gray-700">{destination.description}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Hotel Details */}
+          {hotel.name && (
+            <div className="mb-6">
+              <h3 className="text-xl font-bold text-black mb-3 flex items-center">
+                <Hotel className="h-6 w-6 mr-2 text-black" />
+                Hotel Details
+              </h3>
+              <div className="bg-gray-100 p-4 border border-gray-300 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-700">Name</span>
+                  <span className="font-semibold text-black">{hotel.name}</span>
+                </div>
+                {hotel.room_type && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">Room Type</span>
+                    <span className="font-semibold text-black">{hotel.room_type}</span>
+                  </div>
+                )}
+                {fullData.hotel_cost && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">Cost</span>
+                    <span className="font-semibold text-black">₨ {parseFloat(fullData.hotel_cost).toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Travel Details */}
+          <div className="mb-6">
+            <h3 className="text-xl font-bold text-black mb-3 flex items-center">
+              <TravelIcon className="h-6 w-6 mr-2 text-black" />
+              Travel Details
+            </h3>
+            <div className="bg-gray-100 p-4 border border-gray-300 space-y-2">
+              {trip.travel_mode && (
+                <div className="flex justify-between">
+                  <span className="text-gray-700">Travel Mode</span>
+                  <span className="font-semibold text-black">{trip.travel_mode}</span>
+                </div>
+              )}
+              {fullData.start_location && (
+                <div className="flex justify-between">
+                  <span className="text-gray-700">Starting Point</span>
+                  <span className="font-semibold text-black">{fullData.start_location}</span>
+                </div>
+              )}
+              {fullData.distance && (
+                <div className="flex justify-between">
+                  <span className="text-gray-700">Distance</span>
+                  <span className="font-semibold text-black">{parseFloat(fullData.distance).toFixed(2)} km</span>
+                </div>
+              )}
+              {fullData.travel_cost && (
+                <div className="flex justify-between">
+                  <span className="text-gray-700">Travel Cost</span>
+                  <span className="font-semibold text-black">₨ {parseFloat(fullData.travel_cost).toLocaleString()}</span>
+                </div>
+              )}
+              {fullData.departure_time && (
+                <div className="flex justify-between">
+                  <span className="text-gray-700">Departure Time</span>
+                  <span className="font-semibold text-black">{fullData.departure_time}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Navigation Button */}
+          {fullData.start_latitude && fullData.start_longitude && destination.latitude && destination.longitude && (
+            <div className="mb-4">
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&origin=${fullData.start_latitude},${fullData.start_longitude}&destination=${destination.latitude},${destination.longitude}&travelmode=driving`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-black text-white w-full py-3 px-4 hover:bg-gray-800 transition-colors flex items-center justify-center"
+              >
+                <Navigation className="h-5 w-5 mr-2" />
+                Open in Google Maps
+              </a>
+            </div>
+          )}
+
+          {/* Return Date */}
+          {trip.endDate && (
+            <div className="bg-gray-100 p-4 border border-gray-300">
+              <p className="text-sm text-gray-700 mb-1">Return Date</p>
+              <p className="font-semibold text-black">
+                {new Date(trip.endDate).toLocaleDateString('en-US', { 
+                  year: 'numeric',
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </p>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+// Review Modal Component
+const ReviewModal = ({ trip, onClose, user }) => {
+  const [rating, setRating] = useState(0);
+  const [hoveredRating, setHoveredRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  if (!trip) return null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (rating === 0) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Rating Required',
+        text: 'Please select a rating before submitting your review',
+        confirmButtonColor: '#000000'
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      
+      const response = await fetch(`${config.API_BASE_URL}/api/reviews/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          destination: trip.fullData.destination,
+          user: user.id,
+          rating: rating,
+          comment: comment
+        })
+      });
+
+      if (response.ok) {
+        await Swal.fire({
+          icon: 'success',
+          title: 'Review Submitted!',
+          text: 'Thank you for sharing your experience',
+          timer: 2000,
+          showConfirmButton: false
+        });
+        onClose();
+      } else {
+        const error = await response.json();
+        await Swal.fire({
+          icon: 'error',
+          title: 'Submission Failed',
+          text: error.user || error.detail || 'Unable to submit review. Please try again.',
+          confirmButtonColor: '#000000'
+        });
+      }
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to submit review. Please check your connection and try again.',
+        confirmButtonColor: '#000000'
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div 
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-black">Review Your Trip</h2>
+          <button
+            onClick={onClose}
+            className="bg-gray-200 hover:bg-gray-300 rounded-full p-2 transition-colors"
+          >
+            <X className="h-5 w-5 text-black" />
+          </button>
+        </div>
+
+        <div className="mb-4">
+          <h3 className="font-semibold text-lg text-black">{trip.destination}</h3>
+          <p className="text-sm text-gray-600">{trip.location}</p>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          {/* Rating Stars */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-black mb-2">Rating</label>
+            <div className="flex space-x-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  onMouseEnter={() => setHoveredRating(star)}
+                  onMouseLeave={() => setHoveredRating(0)}
+                  className="focus:outline-none"
+                >
+                  <Star
+                    className={`h-8 w-8 transition-colors ${
+                      star <= (hoveredRating || rating)
+                        ? 'text-black fill-black'
+                        : 'text-gray-300'
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Comment */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-black mb-2">
+              Your Review
+            </label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Share your experience..."
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:border-black resize-none"
+              required
+            />
+          </div>
+
+          {/* Submit Button */}
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-black hover:bg-gray-100 transition-colors"
+              disabled={submitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 bg-black text-white hover:bg-gray-800 transition-colors disabled:bg-gray-400"
+              disabled={submitting}
+            >
+              {submitting ? 'Submitting...' : 'Submit Review'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
   );
 };
 
@@ -952,37 +1435,39 @@ const PersonalizedCard = ({ destination, delay }) => (
     whileHover={{ y: -8 }}
     className="card overflow-hidden cursor-pointer relative"
   >
-    {/* AI Match Badge */}
-    <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full flex items-center space-x-1">
-      <Zap className="h-3 w-3 fill-white" />
-      <span className="text-xs font-semibold">{destination.matchScore}% Match</span>
-    </div>
-    
     <div className="relative h-40 overflow-hidden">
       <img src={destination.image} alt={destination.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" />
-      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center space-x-1">
-        <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
-        <span className="text-xs font-semibold">{destination.rating}</span>
+      {/* AI Match Badge - Black and White */}
+      <div className="absolute top-3 left-3 bg-black px-3 py-1 flex items-center space-x-1">
+        <Zap className="h-3 w-3 text-white fill-white" />
+        <span className="text-xs font-medium text-white">{destination.matchScore}% Match</span>
+      </div>
+      {/* Rating Badge */}
+      <div className="absolute top-3 right-3 bg-white px-3 py-1 flex items-center space-x-1">
+        <Star className="h-4 w-4 text-black fill-black" />
+        <span className="text-sm font-semibold text-black">{destination.rating}</span>
+        <span className="text-xs text-gray-600">({destination.review_count || 0})</span>
       </div>
     </div>
     
     <div className="p-4">
       <h3 className="font-bold text-lg text-slate-800 mb-1">{destination.name}</h3>
-      <p className="text-slate-600 text-sm mb-2 flex items-center">
+      <p className="text-slate-600 text-sm mb-3 flex items-center">
         <MapPin className="h-3 w-3 mr-1" />
         {destination.location}
       </p>
       
-      <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 mb-3">
-        <p className="text-xs text-purple-700 flex items-center">
-          <ThumbsUp className="h-3 w-3 mr-1" />
+      {/* Reason Box - Black and White */}
+      <div className="bg-gray-100 border border-gray-300 p-3 mb-3">
+        <p className="text-xs text-black flex items-center">
+          <ThumbsUp className="h-3 w-3 mr-2 text-black" />
           {destination.reason}
         </p>
       </div>
       
-      <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-        <span className="text-xs px-2 py-1 bg-slate-100 text-slate-700 rounded-full">{destination.category}</span>
-        <span className="text-sm font-semibold text-primary-600">{destination.price}</span>
+      <div className="flex items-center justify-between pt-3 border-t border-gray-300">
+        <span className="text-xs bg-white text-black border border-gray-300 px-2 py-1">{destination.category}</span>
+        <span className="text-sm font-bold text-black">{destination.price}</span>
       </div>
     </div>
   </motion.div>
@@ -1006,53 +1491,43 @@ const ExploreCard = ({ destination, delay }) => (
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" 
         />
       ) : (
-        <div className="w-full h-full bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center">
-          <MapPin className="h-16 w-16 text-white opacity-50" />
+        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+          <MapPin className="h-16 w-16 text-gray-400 opacity-50" />
         </div>
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
       
-      {/* Action buttons */}
-      <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
-          <Heart className="h-4 w-4 text-red-500" />
-        </button>
-        <button className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
-          <Share2 className="h-4 w-4 text-slate-600" />
-        </button>
-      </div>
+      {/* Category Badge - Black */}
+      {destination.category && (
+        <div className="absolute top-3 left-3 bg-black px-3 py-1">
+          <span className="text-xs font-medium text-white capitalize">{destination.category}</span>
+        </div>
+      )}
       
-      {/* Rating */}
-      <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center space-x-1">
-        <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-        <span className="text-sm font-semibold">{destination.rating || destination.average_rating || '0.0'}</span>
-        <span className="text-xs text-slate-600">({destination.review_count || destination.reviews || 0})</span>
+      {/* Rating Badge - White */}
+      <div className="absolute top-3 right-3 bg-white px-3 py-1 flex items-center space-x-1">
+        <Star className="h-4 w-4 text-black fill-black" />
+        <span className="text-sm font-semibold text-black">{destination.rating || destination.average_rating || '0.0'}</span>
+        <span className="text-xs text-gray-600">({destination.review_count || 0})</span>
       </div>
     </div>
     
     <div className="p-4">
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex-1">
-          <h3 className="font-bold text-lg text-slate-800 mb-1">{destination.name}</h3>
-          <p className="text-slate-600 text-sm flex items-center">
-            <MapPin className="h-3 w-3 mr-1" />
-            {destination.country || destination.location}
-          </p>
-        </div>
-      </div>
+      <h3 className="font-bold text-lg text-slate-800 mb-1">{destination.name}</h3>
+      <p className="text-slate-600 text-sm mb-3 flex items-center">
+        <MapPin className="h-3 w-3 mr-1" />
+        {destination.country || destination.location}
+      </p>
       
       {destination.description && (
         <p className="text-sm text-slate-600 mb-3 line-clamp-2">{destination.description}</p>
       )}
       
-      <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-        <span className="text-xs px-2 py-1 bg-gradient-to-r from-primary-100 to-accent-100 text-primary-700 rounded-full font-medium">
-          {destination.category}
-        </span>
-        <span className="text-xs text-slate-600">{destination.best_season || 'All year'}</span>
+      <div className="flex items-center justify-between pt-3 border-t border-gray-300">
+        <span className="text-xs bg-white text-black border border-gray-300 px-2 py-1 capitalize">{destination.category}</span>
+        <span className="text-xs font-semibold text-black">{destination.best_season || 'All year'}</span>
       </div>
       
-      <button className="w-full mt-3 btn-primary text-sm py-2 flex items-center justify-center space-x-2">
+      <button className="w-full mt-3 bg-black text-white text-sm py-2 px-4 hover:bg-gray-800 transition-colors flex items-center justify-center space-x-2">
         <Eye className="h-4 w-4" />
         <span>View Details</span>
       </button>

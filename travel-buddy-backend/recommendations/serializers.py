@@ -72,7 +72,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             'id', 'destination', 'destination_name', 'user', 'user_name',
             'rating', 'comment', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['user', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
 
 
 class UserSerializer(serializers.ModelSerializer):

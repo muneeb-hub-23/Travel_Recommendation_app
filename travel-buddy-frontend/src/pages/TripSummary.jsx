@@ -172,17 +172,6 @@ const TripSummary = ({ user, onLogout }) => {
       return;
     }
 
-    // Validate return date is after departure date
-    if (new Date(returnDate) <= new Date(departureDate)) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Invalid Dates',
-        text: 'Return date must be after departure date',
-        confirmButtonColor: '#f59e0b'
-      });
-      return;
-    }
-
     setSaving(true);
     try {
       // Only send hotel_id if it's a real hotel from database (not from search results)

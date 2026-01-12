@@ -427,7 +427,35 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        from accounts.models import User, AdminUser
+        
+        # Get the user ID from validated data
+        user_obj = serializer.validated_data.get('user')
+        user_id = user_obj.id if hasattr(user_obj, 'id') else user_obj
+        
+        # Check if user exists in accounts_user table
+        user = User.objects.filter(id=user_id).first()
+        
+        if not user:
+            # Check if this is an admin user
+            admin_user = AdminUser.objects.filter(id=user_id).first()
+            if admin_user:
+                # Create a corresponding user for the admin
+                user = User.objects.create(
+                    id=user_id,
+                    username=admin_user.username,
+                    email=admin_user.email,
+                    first_name=admin_user.name.split()[0] if admin_user.name else '',
+                    last_name=' '.join(admin_user.name.split()[1:]) if admin_user.name and len(admin_user.name.split()) > 1 else '',
+                    is_active=True,
+                    is_verified=True,
+                    is_staff=True
+                )
+                # Update serializer with the user instance
+                serializer.validated_data['user'] = user
+        
+        # Save the review
+        serializer.save()
         
         # Update destination rating
         review = serializer.instance

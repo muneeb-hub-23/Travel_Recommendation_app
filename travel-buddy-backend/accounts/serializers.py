@@ -8,7 +8,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone', 
-                  'profile_picture', 'is_verified', 'created_at']
+                  'profile_picture', 'is_verified', 'is_active', 'created_at']
         read_only_fields = ['id', 'is_verified', 'created_at']
 
 

@@ -9,6 +9,21 @@ from .serializers import TripSerializer, TripCreateSerializer
 @api_view(['GET'])
 @permission_classes([AllowAny])
 @authentication_classes([])
+def list_all_trips(request):
+    """
+    List all trips (for admin dashboard)
+    """
+    trips = Trip.objects.all().select_related(
+        'destination', 'hotel', 'user'
+    ).order_by('-created_at')
+    
+    serializer = TripSerializer(trips, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@authentication_classes([])
 def list_user_trips(request):
     """
     List all trips for a specific user

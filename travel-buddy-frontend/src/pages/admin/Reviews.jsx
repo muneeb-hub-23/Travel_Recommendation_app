@@ -1,17 +1,69 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { MessageSquare, Star, ThumbsUp, ThumbsDown, Eye, Trash2, Search, Filter } from 'lucide-react';
+import config from '../../config';
 
 const Reviews = () => {
-  const allReviews = [
-    { id: 1, user: 'Ahmad Khan', destination: 'Hunza Valley', rating: 5, comment: 'Absolutely stunning! The views were breathtaking and the local hospitality was amazing.', date: '2 hours ago', sentiment: 'positive' },
-    { id: 2, user: 'Sara Ali', destination: 'Murree Hills', rating: 4, comment: 'Great place for a family trip. Weather was pleasant and food was delicious.', date: '5 hours ago', sentiment: 'positive' },
-    { id: 3, user: 'Hassan Ahmed', destination: 'Swat Valley', rating: 5, comment: 'Paradise on earth! Must visit for nature lovers.', date: '1 day ago', sentiment: 'positive' },
-    { id: 4, user: 'Fatima Raza', destination: 'Naran Kaghan', rating: 3, comment: 'Beautiful scenery but roads need improvement.', date: '2 days ago', sentiment: 'neutral' },
-    { id: 5, user: 'Zain Malik', destination: 'Fairy Meadows', rating: 5, comment: 'One of the best experiences of my life. Highly recommended!', date: '3 days ago', sentiment: 'positive' },
-    { id: 6, user: 'Ayesha Iqbal', destination: 'Skardu', rating: 4, comment: 'Amazing lakes and mountains. Perfect for photography.', date: '4 days ago', sentiment: 'positive' },
-    { id: 7, user: 'Usman Khan', destination: 'Neelum Valley', rating: 5, comment: 'Crystal clear river and lush green forests. Simply magical!', date: '5 days ago', sentiment: 'positive' },
-    { id: 8, user: 'Maria Ahmed', destination: 'Chitral', rating: 2, comment: 'Expected more facilities. The natural beauty is there but infrastructure is lacking.', date: '6 days ago', sentiment: 'negative' },
-  ];
+  const [allReviews, setAllReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Fetch reviews from API
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${config.API_BASE_URL}/api/reviews/`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Reviews API response:', data);
+          
+          // Handle both array and paginated response
+          const reviewsArray = Array.isArray(data) ? data : (data.results || []);
+          
+          // Transform data to match component structure
+          const transformedReviews = reviewsArray.map(review => ({
+            id: review.id,
+            user: review.user_name || 'Anonymous',
+            destination: review.destination_name || 'Unknown',
+            rating: review.rating,
+            comment: review.comment,
+            date: formatDate(review.created_at),
+            sentiment: getSentimentFromRating(review.rating)
+          }));
+          setAllReviews(transformedReviews);
+        }
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, []);
+
+  // Helper function to format date
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now - date;
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    if (diffInDays === 1) return '1 day ago';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    return date.toLocaleDateString();
+  };
+
+  // Determine sentiment based on rating
+  const getSentimentFromRating = (rating) => {
+    if (rating >= 4) return 'positive';
+    if (rating >= 3) return 'neutral';
+    return 'negative';
+  };
 
   const getSentimentColor = (sentiment) => {
     switch (sentiment) {
@@ -101,6 +153,8 @@ const Reviews = () => {
             <input
               type="text"
               placeholder="Search reviews..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
@@ -111,8 +165,25 @@ const Reviews = () => {
         </div>
 
         {/* Reviews List */}
-        <div className="space-y-4">
-          {allReviews.map((review) => (
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+          </div>
+        ) : allReviews.length === 0 ? (
+          <div className="text-center py-12">
+            <MessageSquare className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+            <p className="text-slate-600 text-lg mb-2">No reviews yet</p>
+            <p className="text-slate-500 text-sm">Reviews will appear here once users submit them</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {allReviews
+              .filter(review => 
+                review.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                review.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                review.comment.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+              .map((review) => (
             <div key={review.id} className="border border-slate-200 p-4 hover:bg-slate-50 transition-colors">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center space-x-3">
@@ -151,7 +222,8 @@ const Reviews = () => {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
     </motion.div>
   );

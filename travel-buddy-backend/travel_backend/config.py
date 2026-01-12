@@ -40,7 +40,7 @@ class ServerConfig:
     
     # Server Settings
     SERVER_HOST = '127.0.0.1'
-    SERVER_PORT = '4000'
+    SERVER_PORT = '4002'
     
     # API Settings
     API_VERSION = 'v1'
@@ -58,14 +58,16 @@ class AppConfig:
     # Django Settings
     SECRET_KEY = 'your-secret-key-here'
     DEBUG = True
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+    ALLOWED_HOSTS = ['*']  # Allow all hosts for IIS deployment
     
     # CORS Settings
     CORS_ALLOWED_ORIGINS = [
         'http://localhost:3000',
         'http://127.0.0.1:3000',
         'http://localhost:5173',
-        'http://127.0.0.1:5173'
+        'http://127.0.0.1:5173',
+        'http://172.30.10.2:4001',
+        'http://124.109.46.50:4001',
     ]
     
     # Media and Static Files
