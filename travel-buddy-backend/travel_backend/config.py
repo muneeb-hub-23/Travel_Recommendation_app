@@ -68,6 +68,7 @@ class AppConfig:
         'http://127.0.0.1:5173',
         'http://172.30.10.2:4001',
         'http://124.109.46.50:4001',
+	'http://travelbuddy.muneebbaig.info',
     ]
     
     # Media and Static Files
