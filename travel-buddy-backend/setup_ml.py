@@ -32,20 +32,9 @@ def main():
         return False
     
     # Step 2: Download spaCy model
-    print("\nChoose spaCy model to download:")
-    print("1. en_core_web_sm (Small - 11 MB, Fast)")
-    print("2. en_core_web_md (Medium - 40 MB, Better accuracy)")
-    print("3. en_core_web_lg (Large - 560 MB, Best accuracy)")
+    print("\nDownloading spaCy model: en_core_web_sm (Small - 11 MB, Fast)")
     
-    choice = input("\nEnter your choice (1-3) [default: 1]: ").strip() or "1"
-    
-    models = {
-        "1": "en_core_web_sm",
-        "2": "en_core_web_md",
-        "3": "en_core_web_lg"
-    }
-    
-    model_name = models.get(choice, "en_core_web_sm")
+    model_name = "en_core_web_sm"
     
     if not run_command(
         f"{sys.executable} -m spacy download {model_name}",

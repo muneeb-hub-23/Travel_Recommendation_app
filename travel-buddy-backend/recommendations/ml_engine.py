@@ -26,14 +26,14 @@ def initialize_ml_models():
     global nlp_model, tfidf_vectorizer, scaler
     
     try:
-        # Initialize spaCy with large English model
-        # Note: You'll need to run: python -m spacy download en_core_web_lg
+        # Initialize spaCy with small English model
+        # Note: You'll need to run: python -m spacy download en_core_web_sm
         logger.info("Loading spaCy model...")
-        nlp_model = spacy.load('en_core_web_lg')
+        nlp_model = spacy.load('en_core_web_sm')
         logger.info("spaCy model loaded successfully")
     except Exception as e:
         logger.warning(f"Could not load spaCy model: {e}")
-        logger.warning("Please run: python -m spacy download en_core_web_lg")
+        logger.warning("Please run: python -m spacy download en_core_web_sm")
         # Initialize blank English model as fallback
         nlp_model = spacy.blank('en')
     
