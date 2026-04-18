@@ -96,6 +96,162 @@ class DestinationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(recommendations, many=True)
         return Response(serializer.data)
     
+    @action(detail=False, methods=['get'])
+    def personalized_for_user(self, request):
+        """
+        Get AI-powered personalized recommendations based on user's trip history
+        Returns destinations with estimated hotel and travel budgets
+        """
+        # Get user_id from query params
+        user_id = request.query_params.get('user_id')
+        if not user_id:
+            return Response(
+                {'error': 'user_id parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            from accounts.models import User
+            from trips.models import Trip
+            from django.db.models import Avg, Count
+            
+            user = User.objects.get(id=user_id)
+            
+            # Get user's trip history
+            user_trips = Trip.objects.filter(user=user).select_related('destination', 'hotel')
+            
+            if not user_trips.exists():
+                # No trip history - return popular destinations
+                destinations = Destination.objects.all().order_by('-rating')[:4]
+                results = []
+                for dest in destinations:
+                    results.append(self._build_recommendation_with_budget(dest, None, 'Popular destination'))
+                return Response(results)
+            
+            # Analyze user's trip patterns
+            visited_categories = list(user_trips.values_list('destination__category', flat=True).distinct())
+            avg_budget = user_trips.aggregate(Avg('total_cost'))['total_cost__avg'] or 30000
+            visited_destinations = list(user_trips.values_list('destination_id', flat=True))
+            
+            # Get similar destinations based on categories
+            recommended_destinations = Destination.objects.filter(
+                category__in=visited_categories
+            ).exclude(
+                id__in=visited_destinations
+            ).order_by('-rating')[:10]
+            
+            # If not enough recommendations, add destinations from other categories
+            if recommended_destinations.count() < 4:
+                additional = Destination.objects.exclude(
+                    id__in=visited_destinations
+                ).exclude(
+                    id__in=[d.id for d in recommended_destinations]
+                ).order_by('-rating')[:4 - recommended_destinations.count()]
+                recommended_destinations = list(recommended_destinations) + list(additional)
+            
+            # Build recommendations with budget estimates and match scores
+            results = []
+            for i, dest in enumerate(recommended_destinations[:4]):
+                # Calculate match score based on category match and rating
+                match_score = 85 + (i * -5)  # Decreasing scores: 85, 80, 75, 70
+                if dest.category in visited_categories:
+                    match_score += 10
+                match_score = min(match_score, 98)
+                
+                # Generate reason based on trip history
+                reason = self._generate_recommendation_reason(dest, user_trips, visited_categories)
+                
+                recommendation = self._build_recommendation_with_budget(dest, avg_budget, reason, match_score)
+                results.append(recommendation)
+            
+            return Response(results)
+            
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'User not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def _generate_recommendation_reason(self, destination, user_trips, visited_categories):
+        """Generate a personalized reason for recommendation"""
+        # Get most recent trip
+        recent_trip = user_trips.first()
+        
+        if destination.category in visited_categories:
+            if recent_trip and recent_trip.destination.category == destination.category:
+                return f"Similar to your {recent_trip.destination.name} trip"
+            return f"Matches your love for {destination.category} destinations"
+        
+        # Check if it's in similar price range
+        avg_cost = user_trips.aggregate(Avg('total_cost'))['total_cost__avg']
+        if avg_cost:
+            return f"Perfect for your preferred budget range"
+        
+        return "Highly rated destination you might enjoy"
+    
+    def _build_recommendation_with_budget(self, destination, user_avg_budget, reason, match_score=90):
+        """Build recommendation object with estimated budgets"""
+        from .models import Hotel
+        
+        # Get hotels for this destination
+        hotels = Hotel.objects.filter(destination=destination)
+        
+        # Estimate hotel budget (3-day trip average)
+        days = 3
+        hotel_budget = 0
+        room_type = 'couple'
+        
+        if hotels.exists():
+            # Get average couple room price
+            avg_hotel = hotels.aggregate(
+                avg_couple=Avg('price_couple'),
+                avg_single=Avg('price_single')
+            )
+            price_per_night = avg_hotel['avg_couple'] or avg_hotel['avg_single'] or 5000
+            hotel_budget = price_per_night * days
+        else:
+            # Estimate based on destination price range
+            price_map = {
+                'budget': 3000,
+                'moderate': 6000,
+                'expensive': 12000,
+                'luxury': 20000
+            }
+            hotel_budget = price_map.get(destination.price_range, 6000) * days
+        
+        # Estimate travel budget based on distance (rough estimate)
+        # Assume average 500km distance, PKR 15 per km for bus
+        travel_budget = 500 * 15 * 2  # Round trip
+        
+        # Total estimated budget
+        total_budget = int(hotel_budget + travel_budget)
+        
+        return {
+            'id': destination.id,
+            'name': destination.name,
+            'location': destination.country,
+            'image': destination.image.url if destination.image else None,
+            'rating': float(destination.rating) if destination.rating else 4.5,
+            'matchScore': match_score,
+            'reason': reason,
+            'category': destination.category,
+            'price': f'₨ {total_budget:,}',
+            'estimated_budget': {
+                'hotel': int(hotel_budget),
+                'travel': int(travel_budget),
+                'total': total_budget,
+                'days': days,
+                'room_type': room_type
+            },
+            'description': destination.description,
+            'best_season': destination.best_season
+        }
+    
     @action(detail=True, methods=['get'])
     def similar(self, request, pk=None):
         """Get destinations similar to this one using ML"""
@@ -274,6 +430,7 @@ class DestinationViewSet(viewsets.ModelViewSet):
                     # Serialize this destination
                     dest_data = self.get_serializer(dest).data
                     dest_data['hotel'] = {
+                        'id': best_hotel.id,  # Include hotel ID for saving trips
                         'name': best_hotel.name,
                         'rating': float(best_hotel.rating),
                         'room_type': room_type,

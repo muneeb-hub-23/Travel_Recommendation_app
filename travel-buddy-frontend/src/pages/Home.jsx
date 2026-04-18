@@ -9,7 +9,7 @@ import {
   Cloud, Sun, CloudRain, Search, TrendingUp, MapPin,
   Calendar, Clock, CheckCircle2, XCircle, AlertCircle,
   Heart, Eye, Share2, Compass, Zap, ThumbsUp, Mic, MicOff, Languages, Navigation,
-  ChevronDown, ChevronUp, DollarSign, Hotel, Car, X, Info
+  ChevronDown, ChevronUp, DollarSign, Hotel, Car, X, Info, Phone
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
@@ -29,9 +29,15 @@ const Home = ({ user, onLogout }) => {
   const [searchSummary, setSearchSummary] = useState('');
   const [weatherLoading, setWeatherLoading] = useState({});
   const [myTrips, setMyTrips] = useState([]);
-  const [tripsLoading, setTripsLoading] = useState(false);
+  const [tripsLoading, setTripsLoading] = useState(true);
+  const [showAllTrips, setShowAllTrips] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [reviewTrip, setReviewTrip] = useState(null);
+  const [selectedDestination, setSelectedDestination] = useState(null);
+  const [destinationReviews, setDestinationReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [personalizedRecommendations, setPersonalizedRecommendations] = useState([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
 
   // Voice input hook
   const { isListening, isSupported, toggleListening, changeLanguage } = useVoiceInput(
@@ -289,53 +295,34 @@ const Home = ({ user, onLogout }) => {
   // Explore destinations - all available destinations
   const exploreDestinations = destinations;
 
-  // Personalized recommendations based on previous trips
-  const personalizedRecommendations = [
-    { 
-      id: 1, 
-      name: 'Ratti Gali Lake', 
-      location: 'Azad Kashmir',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-      rating: 4.8,
-      matchScore: 95,
-      reason: 'Similar to your Hunza Valley trip',
-      category: 'Alpine',
-      price: '₨ 32,000'
-    },
-    { 
-      id: 2, 
-      name: 'Deosai Plains', 
-      location: 'Gilgit-Baltistan',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-      rating: 4.9,
-      matchScore: 92,
-      reason: 'Matches your love for mountain destinations',
-      category: 'Highland',
-      price: '₨ 48,000'
-    },
-    { 
-      id: 3, 
-      name: 'Rama Meadow', 
-      location: 'Gilgit-Baltistan',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-      rating: 4.7,
-      matchScore: 88,
-      reason: 'Perfect for your preferred budget range',
-      category: 'Alpine',
-      price: '₨ 25,000'
-    },
-    { 
-      id: 4, 
-      name: 'Shogran', 
-      location: 'Khyber Pakhtunkhwa',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
-      rating: 4.6,
-      matchScore: 85,
-      reason: 'Similar to your Murree Hills experience',
-      category: 'Hill Station',
-      price: '₨ 22,000'
-    },
-  ];
+  // Fetch personalized recommendations based on user trip history
+  useEffect(() => {
+    const fetchPersonalizedRecommendations = async () => {
+      if (!user || !user.id) return;
+      
+      setRecommendationsLoading(true);
+      try {
+        const response = await fetch(
+          `${config.API_BASE_URL}/api/destinations/personalized_for_user/?user_id=${user.id}`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          setPersonalizedRecommendations(data);
+        } else {
+          console.error('Failed to fetch personalized recommendations');
+          setPersonalizedRecommendations([]);
+        }
+      } catch (error) {
+        console.error('Error fetching personalized recommendations:', error);
+        setPersonalizedRecommendations([]);
+      } finally {
+        setRecommendationsLoading(false);
+      }
+    };
+    
+    fetchPersonalizedRecommendations();
+  }, [user]);
 
   return (
     <div className="min-h-screen">
@@ -474,7 +461,13 @@ const Home = ({ user, onLogout }) => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {searchResults.map((dest, index) => (
-                  <TrendingCard key={dest.id} destination={dest} weatherLoading={weatherLoading} delay={index * 0.05} />
+                  <TrendingCard 
+                    key={dest.id} 
+                    destination={dest} 
+                    weatherLoading={weatherLoading} 
+                    delay={index * 0.05}
+                    onCardClick={setSelectedDestination}
+                  />
                 ))}
               </div>
             )}
@@ -489,17 +482,30 @@ const Home = ({ user, onLogout }) => {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
               </div>
             ) : myTrips.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {myTrips.map((trip, index) => (
-                  <MyTripCard 
-                    key={trip.id} 
-                    trip={trip} 
-                    delay={index * 0.1} 
-                    onViewDetails={() => setSelectedTrip(trip)}
-                    onReview={() => setReviewTrip(trip)}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {(showAllTrips ? myTrips : myTrips.slice(0, 4)).map((trip, index) => (
+                    <MyTripCard 
+                      key={trip.id} 
+                      trip={trip} 
+                      delay={index * 0.1} 
+                      onViewDetails={() => setSelectedTrip(trip)}
+                      onReview={() => setReviewTrip(trip)}
+                    />
+                  ))}
+                </div>
+                {myTrips.length > 4 && (
+                  <div className="flex justify-center mt-8">
+                    <button
+                      onClick={() => setShowAllTrips(!showAllTrips)}
+                      className="px-6 py-3 bg-gradient-to-r from-primary-600 to-purple-600 text-white font-semibold rounded-lg hover:from-primary-700 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-lg flex items-center space-x-2"
+                    >
+                      <span>{showAllTrips ? 'Show Less' : `See All ${myTrips.length} Trips`}</span>
+                      {showAllTrips ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-12">
                 <MapPin className="h-16 w-16 text-slate-300 mx-auto mb-4" />
@@ -514,11 +520,23 @@ const Home = ({ user, onLogout }) => {
         {user && (
           <Section title="Recommended For You" icon={Zap}>
             <p className="text-slate-600 mb-6 -mt-3">Based on your previous trips and preferences</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {personalizedRecommendations.map((dest, index) => (
-                <PersonalizedCard key={dest.id} destination={dest} delay={index * 0.1} />
-              ))}
-            </div>
+            {recommendationsLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+              </div>
+            ) : personalizedRecommendations.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {personalizedRecommendations.map((dest, index) => (
+                  <PersonalizedCard key={dest.id} destination={dest} delay={index * 0.1} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Zap className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-600 text-lg mb-2">No personalized recommendations yet</p>
+                <p className="text-slate-500 text-sm">Start planning trips to get AI-powered recommendations!</p>
+              </div>
+            )}
           </Section>
         )}
 
@@ -661,6 +679,37 @@ const Home = ({ user, onLogout }) => {
       {reviewTrip && (
         <ReviewModal trip={reviewTrip} onClose={() => setReviewTrip(null)} user={user} />
       )}
+
+      {/* Destination Detail Modal */}
+      {selectedDestination && (
+        <DestinationDetailModal 
+          destination={selectedDestination} 
+          onClose={() => {
+            setSelectedDestination(null);
+            setDestinationReviews([]);
+            setReviewsLoading(false);
+          }}
+          reviews={destinationReviews}
+          reviewsLoading={reviewsLoading}
+          onLoadReviews={async (destId) => {
+            setReviewsLoading(true);
+            try {
+              const response = await fetch(`${config.API_BASE_URL}/api/reviews/?destination=${destId}`);
+              if (response.ok) {
+                const data = await response.json();
+                setDestinationReviews(Array.isArray(data) ? data : (data.results || []));
+              } else {
+                setDestinationReviews([]);
+              }
+            } catch (error) {
+              console.error('Error fetching reviews:', error);
+              setDestinationReviews([]);
+            } finally {
+              setReviewsLoading(false);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -716,7 +765,7 @@ const CategoryCard = ({ category, isSelected, onClick, delay }) => (
 );
 
 // Trending Card Component
-const TrendingCard = ({ destination, weatherLoading = {}, delay }) => {
+const TrendingCard = ({ destination, weatherLoading = {}, delay, onCardClick }) => {
   const navigate = useNavigate();
 
   const handlePlanTrip = (e) => {
@@ -728,6 +777,12 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => {
     });
   };
 
+  const handleCardClick = () => {
+    if (onCardClick) {
+      onCardClick(destination);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -735,6 +790,7 @@ const TrendingCard = ({ destination, weatherLoading = {}, delay }) => {
       viewport={{ once: true }}
       transition={{ delay }}
       whileHover={{ y: -8 }}
+      onClick={handleCardClick}
       className="bg-white border border-slate-200 overflow-hidden cursor-pointer"
     >
     <div className="relative h-48 overflow-hidden">
@@ -1009,6 +1065,16 @@ const MyTripCard = ({ trip, delay, onViewDetails, onReview }) => {
             <span className="text-xs text-gray-700">Category:</span>
             <span className="text-xs font-semibold text-black">{trip.category}</span>
           </div>
+          {/* Hotel Contact - Show if night stay is included */}
+          {trip.fullData?.hotel_details && trip.fullData.hotel_details.phone && (
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-300">
+              <span className="text-xs text-gray-700 flex items-center">
+                <Phone className="h-3 w-3 mr-1" />
+                Hotel Contact:
+              </span>
+              <span className="text-xs font-semibold text-black">{trip.fullData.hotel_details.phone}</span>
+            </div>
+          )}
         </div>
         
         <div className="flex items-center justify-between pt-3 border-t border-gray-300">
@@ -1164,17 +1230,40 @@ const TripDetailModal = ({ trip, onClose }) => {
           )}
 
           {/* Hotel Details */}
-          {hotel.name && (
+          {(hotel.name || fullData.hotel || fullData.hotel_cost > 0) && (
             <div className="mb-6">
               <h3 className="text-xl font-bold text-black mb-3 flex items-center">
                 <Hotel className="h-6 w-6 mr-2 text-black" />
                 Hotel Details
               </h3>
               <div className="bg-gray-100 p-4 border border-gray-300 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-700">Name</span>
-                  <span className="font-semibold text-black">{hotel.name}</span>
-                </div>
+                {hotel.name && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">Name</span>
+                    <span className="font-semibold text-black">{hotel.name}</span>
+                  </div>
+                )}
+                {!hotel.name && fullData.hotel && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">Hotel ID</span>
+                    <span className="font-semibold text-black">{fullData.hotel}</span>
+                  </div>
+                )}
+                {hotel.address && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">Address</span>
+                    <span className="font-semibold text-black">{hotel.address}</span>
+                  </div>
+                )}
+                {hotel.phone && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700 flex items-center">
+                      <Phone className="h-4 w-4 mr-1" />
+                      Contact
+                    </span>
+                    <span className="font-semibold text-black">{hotel.phone}</span>
+                  </div>
+                )}
                 {hotel.room_type && (
                   <div className="flex justify-between">
                     <span className="text-gray-700">Room Type</span>
@@ -1426,52 +1515,89 @@ const ReviewModal = ({ trip, onClose, user }) => {
 };
 
 // Personalized Recommendation Card Component
-const PersonalizedCard = ({ destination, delay }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true }}
-    transition={{ delay }}
-    whileHover={{ y: -8 }}
-    className="card overflow-hidden cursor-pointer relative"
-  >
-    <div className="relative h-40 overflow-hidden">
-      <img src={destination.image} alt={destination.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-110" />
-      {/* AI Match Badge - Black and White */}
-      <div className="absolute top-3 left-3 bg-black px-3 py-1 flex items-center space-x-1">
-        <Zap className="h-3 w-3 text-white fill-white" />
-        <span className="text-xs font-medium text-white">{destination.matchScore}% Match</span>
+const PersonalizedCard = ({ destination, delay }) => {
+  const imageUrl = destination.image 
+    ? (destination.image.startsWith('http') ? destination.image : `${config.API_BASE_URL}${destination.image}`)
+    : 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay }}
+      whileHover={{ y: -8 }}
+      className="card overflow-hidden cursor-pointer relative"
+    >
+      <div className="relative h-40 overflow-hidden">
+        <img 
+          src={imageUrl} 
+          alt={destination.name} 
+          className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400';
+          }}
+        />
+        {/* AI Match Badge - Black and White */}
+        <div className="absolute top-3 left-3 bg-black px-3 py-1 flex items-center space-x-1">
+          <Zap className="h-3 w-3 text-white fill-white" />
+          <span className="text-xs font-medium text-white">{destination.matchScore}% Match</span>
+        </div>
+        {/* Rating Badge */}
+        <div className="absolute top-3 right-3 bg-white px-3 py-1 flex items-center space-x-1">
+          <Star className="h-4 w-4 text-black fill-black" />
+          <span className="text-sm font-semibold text-black">{destination.rating}</span>
+        </div>
       </div>
-      {/* Rating Badge */}
-      <div className="absolute top-3 right-3 bg-white px-3 py-1 flex items-center space-x-1">
-        <Star className="h-4 w-4 text-black fill-black" />
-        <span className="text-sm font-semibold text-black">{destination.rating}</span>
-        <span className="text-xs text-gray-600">({destination.review_count || 0})</span>
-      </div>
-    </div>
-    
-    <div className="p-4">
-      <h3 className="font-bold text-lg text-slate-800 mb-1">{destination.name}</h3>
-      <p className="text-slate-600 text-sm mb-3 flex items-center">
-        <MapPin className="h-3 w-3 mr-1" />
-        {destination.location}
-      </p>
       
-      {/* Reason Box - Black and White */}
-      <div className="bg-gray-100 border border-gray-300 p-3 mb-3">
-        <p className="text-xs text-black flex items-center">
-          <ThumbsUp className="h-3 w-3 mr-2 text-black" />
-          {destination.reason}
+      <div className="p-4">
+        <h3 className="font-bold text-lg text-slate-800 mb-1">{destination.name}</h3>
+        <p className="text-slate-600 text-sm mb-3 flex items-center">
+          <MapPin className="h-3 w-3 mr-1" />
+          {destination.location}
         </p>
+        
+        {/* Reason Box - Black and White */}
+        <div className="bg-gray-100 border border-gray-300 p-3 mb-3">
+          <p className="text-xs text-black flex items-center">
+            <ThumbsUp className="h-3 w-3 mr-2 text-black" />
+            {destination.reason}
+          </p>
+        </div>
+        
+        {/* Budget Breakdown */}
+        {destination.estimated_budget && (
+          <div className="bg-slate-50 border border-slate-200 p-3 mb-3 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-600 flex items-center">
+                <Hotel className="h-3 w-3 mr-1" />
+                Hotel ({destination.estimated_budget.days} days)
+              </span>
+              <span className="font-semibold text-slate-800">₨ {destination.estimated_budget.hotel.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-600 flex items-center">
+                <Car className="h-3 w-3 mr-1" />
+                Travel
+              </span>
+              <span className="font-semibold text-slate-800">₨ {destination.estimated_budget.travel.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-300">
+              <span className="text-slate-700 font-semibold">Total Budget</span>
+              <span className="font-bold text-slate-900">₨ {destination.estimated_budget.total.toLocaleString()}</span>
+            </div>
+          </div>
+        )}
+        
+        <div className="flex items-center justify-between pt-3 border-t border-gray-300">
+          <span className="text-xs bg-white text-black border border-gray-300 px-2 py-1">{destination.category}</span>
+          <span className="text-sm font-bold text-black">{destination.price}</span>
+        </div>
       </div>
-      
-      <div className="flex items-center justify-between pt-3 border-t border-gray-300">
-        <span className="text-xs bg-white text-black border border-gray-300 px-2 py-1">{destination.category}</span>
-        <span className="text-sm font-bold text-black">{destination.price}</span>
-      </div>
-    </div>
-  </motion.div>
-);
+    </motion.div>
+  );
+};
 
 // Explore Destination Card Component
 const ExploreCard = ({ destination, delay }) => (
@@ -1534,5 +1660,281 @@ const ExploreCard = ({ destination, delay }) => (
     </div>
   </motion.div>
 );
+
+// Destination Detail Modal Component
+const DestinationDetailModal = ({ destination, onClose, reviews, reviewsLoading, onLoadReviews }) => {
+  const navigate = useNavigate();
+  const [currentWeather, setCurrentWeather] = useState(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+
+  useEffect(() => {
+    // Fetch reviews when modal opens
+    if (destination && onLoadReviews) {
+      onLoadReviews(destination.id);
+    }
+
+    // Fetch current weather
+    const fetchWeather = async () => {
+      if (!destination.latitude || !destination.longitude) return;
+      
+      setWeatherLoading(true);
+      try {
+        const response = await fetch(
+          `${config.API_BASE_URL}/api/weather/?lat=${destination.latitude}&lon=${destination.longitude}`
+        );
+        
+        if (response.ok) {
+          const weatherData = await response.json();
+          setCurrentWeather(weatherData);
+        }
+      } catch (error) {
+        console.error('Weather fetch failed:', error);
+      } finally {
+        setWeatherLoading(false);
+      }
+    };
+
+    fetchWeather();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [destination?.id]);
+
+  const handlePlanTrip = () => {
+    navigate(`/plan-trip/${destination.id}`, { 
+      state: { destination } 
+    });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden my-8"
+      >
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between z-10">
+          <h2 className="text-2xl font-bold text-slate-800">Destination Details</h2>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
+          {/* Hero Image */}
+          {destination.image && (
+            <div className="relative h-80">
+              <img 
+                src={destination.image.startsWith('http') ? destination.image : `${config.API_BASE_URL}${destination.image}`}
+                alt={destination.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = 'https://via.placeholder.com/800x400?text=No+Image';
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+              <div className="absolute bottom-6 left-6 text-white">
+                <h1 className="text-4xl font-bold mb-2">{destination.name}</h1>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <MapPin className="h-5 w-5" />
+                    <span className="text-lg">{destination.country}</span>
+                  </div>
+                  <div className="flex items-center space-x-1 bg-white/20 backdrop-blur-sm px-3 py-1 rounded">
+                    <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
+                    <span className="font-semibold">{destination.rating || destination.average_rating || '0.0'}</span>
+                    <span className="text-sm">({destination.review_count || 0} reviews)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="p-6 space-y-6">
+            {/* Description */}
+            {destination.description && (
+              <div>
+                <h3 className="text-xl font-bold text-slate-800 mb-3 flex items-center">
+                  <Info className="h-5 w-5 mr-2 text-primary-600" />
+                  About This Destination
+                </h3>
+                <p className="text-slate-700 leading-relaxed">{destination.description}</p>
+              </div>
+            )}
+
+            {/* Quick Info Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {destination.category && (
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                  <p className="text-xs text-slate-600 mb-1">Category</p>
+                  <p className="font-semibold text-slate-800 capitalize">{destination.category}</p>
+                </div>
+              )}
+              {destination.price_range && (
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                  <p className="text-xs text-slate-600 mb-1">Price Range</p>
+                  <p className="font-semibold text-slate-800 capitalize">{destination.price_range}</p>
+                </div>
+              )}
+              {destination.best_season && (
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                  <p className="text-xs text-slate-600 mb-1">Best Season</p>
+                  <p className="font-semibold text-slate-800">{destination.best_season}</p>
+                </div>
+              )}
+              {destination.travel_options && destination.travel_options.length > 0 && (
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                  <p className="text-xs text-slate-600 mb-1">Travel Options</p>
+                  <p className="font-semibold text-slate-800 capitalize">
+                    {Array.isArray(destination.travel_options) 
+                      ? destination.travel_options.join(', ') 
+                      : destination.travel_options}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Current Weather */}
+            <div>
+              <h3 className="text-xl font-bold text-slate-800 mb-3 flex items-center">
+                <Cloud className="h-5 w-5 mr-2 text-primary-600" />
+                Current Weather
+              </h3>
+              {weatherLoading ? (
+                <div className="bg-slate-50 p-6 rounded-lg border border-slate-200 flex items-center justify-center">
+                  <div className="flex items-center space-x-3">
+                    <Cloud className="h-6 w-6 text-slate-400 animate-pulse" />
+                    <span className="text-slate-600">Loading weather data...</span>
+                  </div>
+                </div>
+              ) : currentWeather ? (
+                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-6 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-3xl font-bold text-slate-800 mb-1">
+                        {Math.round(currentWeather.temperature)}°C
+                      </p>
+                      <p className="text-lg text-slate-700 capitalize">{currentWeather.description}</p>
+                      {currentWeather.feels_like && (
+                        <p className="text-sm text-slate-600 mt-1">
+                          Feels like {Math.round(currentWeather.feels_like)}°C
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      {currentWeather.humidity && (
+                        <p className="text-sm text-slate-600">Humidity: {currentWeather.humidity}%</p>
+                      )}
+                      {currentWeather.wind_speed && (
+                        <p className="text-sm text-slate-600">Wind: {currentWeather.wind_speed} m/s</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : destination.general_weather ? (
+                <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
+                  <p className="text-slate-700">{destination.general_weather}</p>
+                </div>
+              ) : (
+                <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
+                  <p className="text-slate-600">Weather information not available</p>
+                </div>
+              )}
+            </div>
+
+            {/* Reviews Section */}
+            <div>
+              <h3 className="text-xl font-bold text-slate-800 mb-3 flex items-center">
+                <Star className="h-5 w-5 mr-2 text-primary-600" />
+                Reviews ({reviews.length})
+              </h3>
+              {reviewsLoading ? (
+                <div className="bg-slate-50 p-6 rounded-lg border border-slate-200 flex items-center justify-center">
+                  <div className="flex items-center space-x-3">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+                    <span className="text-slate-600">Loading reviews...</span>
+                  </div>
+                </div>
+              ) : reviews.length > 0 ? (
+                <div className="space-y-4">
+                  {reviews.map((review) => (
+                    <div key={review.id} className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-semibold">
+                            {review.user_name ? review.user_name.charAt(0).toUpperCase() : 'U'}
+                          </div>
+                          <span className="font-semibold text-slate-800">{review.user_name || 'Anonymous'}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                          <span className="font-semibold text-slate-800">{review.rating}</span>
+                        </div>
+                      </div>
+                      {review.comment && (
+                        <p className="text-slate-700 leading-relaxed">{review.comment}</p>
+                      )}
+                      {review.created_at && (
+                        <p className="text-xs text-slate-500 mt-2">
+                          {new Date(review.created_at).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-slate-50 p-6 rounded-lg border border-slate-200 text-center">
+                  <Star className="h-12 w-12 text-slate-300 mx-auto mb-2" />
+                  <p className="text-slate-600">No reviews yet</p>
+                  <p className="text-sm text-slate-500 mt-1">Be the first to review this destination!</p>
+                </div>
+              )}
+            </div>
+
+            {/* Activities */}
+            {destination.activities && (
+              <div>
+                <h3 className="text-xl font-bold text-slate-800 mb-3 flex items-center">
+                  <Compass className="h-5 w-5 mr-2 text-primary-600" />
+                  Activities
+                </h3>
+                <p className="text-slate-700 leading-relaxed">{destination.activities}</p>
+              </div>
+            )}
+
+            {/* Accommodation Info */}
+            {destination.accommodation_info && (
+              <div>
+                <h3 className="text-xl font-bold text-slate-800 mb-3 flex items-center">
+                  <Hotel className="h-5 w-5 mr-2 text-primary-600" />
+                  Accommodation
+                </h3>
+                <p className="text-slate-700 leading-relaxed">{destination.accommodation_info}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer with Action Button */}
+        <div className="sticky bottom-0 bg-white border-t border-slate-200 p-6">
+          <button
+            onClick={handlePlanTrip}
+            className="w-full bg-black text-white py-4 px-6 rounded-lg font-semibold hover:bg-slate-800 transition-colors flex items-center justify-center space-x-2"
+          >
+            <Navigation className="h-5 w-5" />
+            <span>Plan Trip to {destination.name}</span>
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 export default Home;

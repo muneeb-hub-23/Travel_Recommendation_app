@@ -36,13 +36,10 @@ const TripSummary = ({ user, onLogout }) => {
         navigate('/');
       }
     } else {
-      // Debug log to see what data we're getting
-      console.log('Trip Data:', tripData);
-      console.log('Destination:', tripData.destination);
-      
       // If search results included hotel data, set it as selected
       if (tripData.destination?.hotel) {
         setSelectedHotel({
+          id: tripData.destination.hotel.id, // Include hotel ID from search results
           name: tripData.destination.hotel.name,
           rating: tripData.destination.hotel.rating,
           price_single: tripData.destination.hotel.price_per_night,
@@ -174,26 +171,8 @@ const TripSummary = ({ user, onLogout }) => {
 
     setSaving(true);
     try {
-      // Only send hotel_id if it's a real hotel from database (not from search results)
-      const hotelIdToSend = (selectedHotel && !selectedHotel.fromSearch) ? selectedHotel.id : null;
-      
-      // Debug: Log raw tripData
-      console.log('Raw tripData:', tripData);
-      console.log('startLocation.lon type:', typeof tripData.startLocation.lon, 'value:', tripData.startLocation.lon);
-      console.log('distance type:', typeof tripData.distance, 'value:', tripData.distance);
-      
-      // Helper function to ensure value is a number
-      const ensureNumber = (value) => {
-        console.log('ensureNumber input:', value, 'type:', typeof value, 'isArray:', Array.isArray(value));
-        if (Array.isArray(value)) {
-          const result = parseFloat(value[0]) || 0;
-          console.log('ensureNumber array result:', result);
-          return result;
-        }
-        const result = parseFloat(value) || 0;
-        console.log('ensureNumber non-array result:', result);
-        return result;
-      };
+      // Send hotel_id if a hotel is selected and has a valid id
+      const hotelIdToSend = (selectedHotel && selectedHotel.id) ? selectedHotel.id : null;
       
       // Force conversion and round to match backend DecimalField constraints
       const startLat = parseFloat(
@@ -230,9 +209,6 @@ const TripSummary = ({ user, onLogout }) => {
         status: 'planned'
       };
 
-      console.log('Sending trip data:', tripPayload);
-      console.log('Types check - start_longitude:', typeof tripPayload.start_longitude, 'distance:', typeof tripPayload.distance);
-
       const response = await fetch(`${config.API_BASE_URL}/api/trips/`, {
         method: 'POST',
         headers: {
@@ -254,11 +230,9 @@ const TripSummary = ({ user, onLogout }) => {
         navigate('/');
       } else {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Backend error:', errorData);
         throw new Error(errorData.error || errorData.message || 'Failed to save trip');
       }
     } catch (error) {
-      console.error('Error saving trip:', error);
       Swal.fire({
         icon: 'error',
         title: 'Error',

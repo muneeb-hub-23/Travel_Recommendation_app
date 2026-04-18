@@ -15,6 +15,7 @@ urlpatterns = [
     
     # Admin endpoints
     path('users/', admin_views.list_users, name='list_users'),
+    path('users/<int:pk>/', admin_views.user_detail, name='user_detail'),
     path('admin-users/', admin_views.admin_users, name='admin_users'),
     path('admin-users/<int:pk>/', admin_views.admin_user_detail, name='admin_user_detail'),
     path('admin-login/', admin_views.admin_login, name='admin_login'),

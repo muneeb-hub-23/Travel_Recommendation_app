@@ -289,8 +289,99 @@ const Destinations = () => {
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
               <AddDestinationForm
                 onSubmit={handleAddDestination}
-                onCancel={() => setShowAddDestination(false)}
+                onClose={() => setShowAddDestination(false)}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Destination Modal */}
+      {showViewModal && selectedDestination && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden">
+            <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-slate-800">Destination Details</h2>
+              <button onClick={() => setShowViewModal(false)} className="p-2 hover:bg-slate-100 rounded">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
+              {selectedDestination.image && (
+                <img 
+                  src={selectedDestination.image.startsWith('http') ? selectedDestination.image : `${config.API_BASE_URL}${selectedDestination.image}`}
+                  alt={selectedDestination.name}
+                  className="w-full h-64 object-cover rounded-lg mb-6"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = 'https://via.placeholder.com/800x400?text=No+Image';
+                  }}
+                />
+              )}
+              
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-800 mb-2">{selectedDestination.name}</h3>
+                  <div className="flex items-center space-x-4 text-slate-600">
+                    <div className="flex items-center space-x-1">
+                      <MapPin className="h-4 w-4" />
+                      <span>{selectedDestination.country}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Star className="h-4 w-4 text-black fill-black" />
+                      <span className="font-medium">{selectedDestination.rating || '0.0'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-700 mb-2">Category</h4>
+                  <span className="px-3 py-1 bg-black text-white text-sm rounded">
+                    {selectedDestination.category}
+                  </span>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-700 mb-2">Description</h4>
+                  <p className="text-slate-600 leading-relaxed">{selectedDestination.description}</p>
+                </div>
+
+                {selectedDestination.best_time_to_visit && (
+                  <div>
+                    <h4 className="font-semibold text-slate-700 mb-2">Best Time to Visit</h4>
+                    <p className="text-slate-600">{selectedDestination.best_time_to_visit}</p>
+                  </div>
+                )}
+
+                {selectedDestination.activities && selectedDestination.activities.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-slate-700 mb-2">Activities</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedDestination.activities.map((activity, index) => (
+                        <span key={index} className="px-3 py-1 bg-slate-100 text-slate-700 text-sm rounded">
+                          {activity}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedDestination.average_cost && (
+                  <div>
+                    <h4 className="font-semibold text-slate-700 mb-2">Average Cost</h4>
+                    <p className="text-slate-600">{selectedDestination.average_cost}</p>
+                  </div>
+                )}
+
+                <div className="pt-4 border-t border-slate-200">
+                  <button
+                    onClick={() => setShowViewModal(false)}
+                    className="w-full btn-primary py-3"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -308,9 +399,10 @@ const Destinations = () => {
             </div>
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
               <AddDestinationForm
-                destination={selectedDestination}
+                initialData={selectedDestination}
+                isEdit={true}
                 onSubmit={handleUpdateDestination}
-                onCancel={() => setShowEditModal(false)}
+                onClose={() => setShowEditModal(false)}
               />
             </div>
           </div>
