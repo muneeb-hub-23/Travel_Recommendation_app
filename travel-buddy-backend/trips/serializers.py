@@ -44,6 +44,26 @@ class TripCreateSerializer(serializers.ModelSerializer):
         
         from accounts.models import User
         from recommendations.models import Destination, Hotel
+        from rest_framework.exceptions import ValidationError
+        
+        # Validate user exists
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            raise ValidationError({'user_id': f'User with id {user_id} does not exist'})
+        
+        # Validate destination exists
+        try:
+            destination = Destination.objects.get(id=destination_id)
+        except Destination.DoesNotExist:
+            raise ValidationError({'destination_id': f'Destination with id {destination_id} does not exist'})
+        
+        # Validate hotel exists if provided
+        if hotel_id:
+            try:
+                hotel = Hotel.objects.get(id=hotel_id)
+            except Hotel.DoesNotExist:
+                raise ValidationError({'hotel_id': f'Hotel with id {hotel_id} does not exist'})
         
         validated_data['user_id'] = user_id
         validated_data['destination_id'] = destination_id

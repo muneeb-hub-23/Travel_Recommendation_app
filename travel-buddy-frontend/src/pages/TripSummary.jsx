@@ -20,6 +20,7 @@ const TripSummary = ({ user, onLogout }) => {
   const [hotels, setHotels] = useState([]);
   const [loadingHotels, setLoadingHotels] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showHotelOptions, setShowHotelOptions] = useState(false);
 
   // Redirect if no trip data
   useEffect(() => {
@@ -121,9 +122,9 @@ const TripSummary = ({ user, onLogout }) => {
   };
 
   const getTotalHotelCost = () => {
-    const hotelCostPerNight = selectedHotel ? parseFloat(selectedHotel.price_single || 0) : 0;
-    const multiplier = getRoomMultiplier();
-    return (hotelCostPerNight * multiplier * numberOfNights).toFixed(2);
+    if (!selectedHotel) return 0;
+    const pricePerNight = parseFloat(selectedHotel.price_single || selectedHotel.price_couple || 0);
+    return (pricePerNight * numberOfNights).toFixed(2);
   };
 
   const getTotalTripDays = () => {
@@ -314,12 +315,12 @@ const TripSummary = ({ user, onLogout }) => {
               </div>
             </div>
 
-            {/* Hotel from Search Results */}
-            {selectedHotel?.fromSearch && (
+            {/* Selected Hotel */}
+            {selectedHotel && (
               <div className="bg-white shadow-lg p-6">
                 <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center">
                   <HotelIcon className="h-6 w-6 mr-2" />
-                  Selected Hotel (from search)
+                  Selected Hotel
                 </h2>
                 <div className="p-4 border-2 border-green-500 bg-green-50">
                   <div className="flex items-start justify-between mb-3">
@@ -327,12 +328,14 @@ const TripSummary = ({ user, onLogout }) => {
                       <h3 className="font-bold text-slate-900">{selectedHotel.name}</h3>
                       <div className="flex items-center space-x-4 mt-2 text-sm">
                         <span className="text-slate-700">⭐ {selectedHotel.rating}</span>
-                        <span className="text-slate-700 capitalize">{selectedHotel.room_type}</span>
+                        {selectedHotel.room_type && (
+                          <span className="text-slate-700 capitalize">{selectedHotel.room_type}</span>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-slate-600">Per Night</p>
-                      <p className="text-xl font-bold text-slate-900">PKR {selectedHotel.price_single}</p>
+                      <p className="text-xl font-bold text-slate-900">PKR {selectedHotel.price_single || selectedHotel.price_couple}</p>
                     </div>
                   </div>
                   {selectedHotel.amenities && selectedHotel.amenities.length > 0 && (
@@ -344,50 +347,100 @@ const TripSummary = ({ user, onLogout }) => {
                       ))}
                     </div>
                   )}
-                  <button
-                    onClick={() => setSelectedHotel(null)}
-                    className="mt-3 w-full py-2 bg-red-100 text-red-700 hover:bg-red-200 transition-colors text-sm font-semibold"
-                  >
-                    Remove Hotel
-                  </button>
+                  <div className="grid grid-cols-2 gap-2 mt-3">
+                    <button
+                      onClick={() => setShowHotelOptions(!showHotelOptions)}
+                      className="py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors text-sm font-semibold"
+                    >
+                      {showHotelOptions ? 'Hide Options' : 'Change Hotel'}
+                    </button>
+                    <button
+                      onClick={() => setSelectedHotel(null)}
+                      className="py-2 bg-red-100 text-red-700 hover:bg-red-200 transition-colors text-sm font-semibold"
+                    >
+                      Remove Hotel
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Hotels */}
-            {!selectedHotel?.fromSearch && !loadingHotels && hotels.length > 0 && (
+            {/* Available Hotels */}
+            {(!selectedHotel || showHotelOptions) && !loadingHotels && hotels.length > 0 && (
               <div className="bg-white shadow-lg p-6">
                 <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center">
                   <HotelIcon className="h-6 w-6 mr-2" />
-                  Available Hotels
+                  {selectedHotel ? 'Other Available Hotels' : 'Available Hotels'}
                 </h2>
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-96 overflow-y-auto">
                   {hotels.map((hotel) => (
                     <div
                       key={hotel.id}
-                      onClick={() => setSelectedHotel(selectedHotel?.id === hotel.id ? null : hotel)}
+                      onClick={() => {
+                        setSelectedHotel(hotel);
+                        setShowHotelOptions(false);
+                      }}
                       className={`p-4 border-2 cursor-pointer transition-all ${
                         selectedHotel?.id === hotel.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-slate-200 hover:border-slate-300'
+                          ? 'border-green-500 bg-green-50'
+                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                       }`}
                     >
                       <div className="flex items-start justify-between">
-                        <div>
+                        <div className="flex-1">
                           <h3 className="font-bold text-slate-900">{hotel.name}</h3>
                           <p className="text-sm text-slate-600 mt-1">{hotel.address}</p>
                           <div className="flex items-center space-x-4 mt-2 text-sm">
                             <span className="text-slate-700">⭐ {hotel.rating}</span>
                             <span className="text-slate-700">📞 {hotel.phone}</span>
                           </div>
+                          {hotel.amenities && hotel.amenities.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {hotel.amenities.slice(0, 3).map((amenity, idx) => (
+                                <span key={idx} className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                                  {amenity}
+                                </span>
+                              ))}
+                              {hotel.amenities.length > 3 && (
+                                <span className="text-xs text-slate-500">+{hotel.amenities.length - 3} more</span>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <div className="text-right">
+                        <div className="text-right ml-4">
                           <p className="text-sm text-slate-600">Per Night</p>
-                          <p className="text-xl font-bold text-slate-900">PKR {hotel.price_single}</p>
+                          <p className="text-xl font-bold text-slate-900">PKR {hotel.price_couple || hotel.price_single}</p>
+                          {selectedHotel?.id === hotel.id && (
+                            <span className="inline-block mt-2 text-xs bg-green-600 text-white px-2 py-1 rounded">Selected</span>
+                          )}
                         </div>
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+            
+            {/* No Hotels Available */}
+            {!loadingHotels && hotels.length === 0 && !selectedHotel && (
+              <div className="bg-white shadow-lg p-6">
+                <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center">
+                  <HotelIcon className="h-6 w-6 mr-2" />
+                  Hotels
+                </h2>
+                <p className="text-slate-600 text-center py-8">No hotels available for this destination</p>
+              </div>
+            )}
+            
+            {/* Loading Hotels */}
+            {loadingHotels && (
+              <div className="bg-white shadow-lg p-6">
+                <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center">
+                  <HotelIcon className="h-6 w-6 mr-2" />
+                  Hotels
+                </h2>
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
                 </div>
               </div>
             )}

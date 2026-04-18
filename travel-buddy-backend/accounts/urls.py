@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, admin_views
+from . import views, admin_views, analytics_views
 
 urlpatterns = [
     # Regular user endpoints
@@ -19,4 +19,7 @@ urlpatterns = [
     path('admin-users/', admin_views.admin_users, name='admin_users'),
     path('admin-users/<int:pk>/', admin_views.admin_user_detail, name='admin_user_detail'),
     path('admin-login/', admin_views.admin_login, name='admin_login'),
+    
+    # Analytics endpoints
+    path('analytics/', analytics_views.analytics_dashboard, name='analytics_dashboard'),
 ]
